@@ -1,0 +1,25 @@
+.DS_Store
+.idea
+
+
+# Generated & compiled files
+/bin/
+vendor/
+*.so
+*.dylib
+var/log/*.log
+var/wiremock/*.jar
+mock_*.go
+*_gen.go
+*_easyjson.go
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+*.tmp
+report-*.json
+
+# Mock generation creates temporary .bak files
+*.bak

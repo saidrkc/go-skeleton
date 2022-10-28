@@ -18,8 +18,8 @@ type Server struct {
 
 func NewHttpServer(cfg Config, metrics metrics.Metrics) Server {
 	r := gin.New()
-	routes := Routes{gin: r}
-	routes.BindRoutes(cfg, metrics)
+	routes := Routes{gin: r, Metrics: metrics}
+	routes.BindRoutes(cfg)
 
 	return Server{
 		GinEngine: r,

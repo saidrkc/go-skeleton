@@ -1,23 +1,25 @@
 package application
 
 import (
-	"strconv"
-	"time"
+	"errors"
 
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
-
-	"go-skeleton/infrastructure/metrics"
+	"go-skeleton/src/domain"
 )
 
-func Ping(metrics metrics.Metrics) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		metrics.HttpResponseTime.WithLabelValues(c.Request.Method)
-		timer := prometheus.NewTimer(metrics.HttpResponseTime.WithLabelValues(c.Request.Method))
-		metrics.TotalRequest.WithLabelValues(c.Request.Method).Inc()
-		c.JSON(500, "{'test'}")
-		metrics.ResponseStatus.WithLabelValues(strconv.Itoa(c.Writer.Status())).Inc()
-		time.Sleep(time.Second * 3)
-		defer timer.ObserveDuration()
+type Ping struct {
+	PingRequest map[string][]string
+}
+
+func (p Ping) Handle(c domain.Command) error {
+	cmd, ok := c.(domain.Command)
+	if !ok {
+		return errors.New("invalid command")
 	}
+
+	cmd.CommandID()
+	return nil
+}
+
+func NewPingApplication(pingReq map[string][]string) Ping {
+	return Ping{PingRequest: pingReq}
 }

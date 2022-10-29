@@ -1,9 +1,12 @@
-package domain
+package command
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Command interface {
 	CommandID() string
+	PingCommand()
 }
 
 type CommandHandler interface {

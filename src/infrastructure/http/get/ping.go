@@ -1,30 +1,24 @@
 package get
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"go-skeleton/infrastructure/metrics"
-	"go-skeleton/src/application"
-	"go-skeleton/src/domain"
+	"go-skeleton/src/application/ping"
+	"go-skeleton/src/infrastructure/bus/query"
 )
 
 type PingHandler struct {
 	metrics metrics.Metrics
 }
 
-func (h PingHandler) Ping(c *gin.Context, commandBus domain.CommandBus) {
-	h.metrics.HttpResponseTime.WithLabelValues(c.Request.Method)
-	timer := prometheus.NewTimer(h.metrics.HttpResponseTime.WithLabelValues(c.Request.Method))
-	defer timer.ObserveDuration()
-	h.metrics.TotalRequest.WithLabelValues(c.Request.Method).Inc()
-	c.JSON(500, "{'test'}")
-	h.metrics.ResponseStatus.WithLabelValues(strconv.Itoa(c.Writer.Status())).Inc()
-	commandBus.Exec(application.PingCommand{})
+func (h PingHandler) Ping(c *gin.Context, queryBus query.QueryBus) {
 	time.Sleep(time.Second * 3)
+	pingQuery := ping.NewQuery(c, h.metrics)
+	rsp, _ := queryBus.Exec(pingQuery)
+	c.JSON(200, rsp)
 }
 
 func NewPingHandler(metrics metrics.Metrics) PingHandler {

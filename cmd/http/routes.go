@@ -5,12 +5,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"go-skeleton/infrastructure/metrics"
-	"go-skeleton/src/application"
-	"go-skeleton/src/domain"
+	"go-skeleton/src/application/ping"
+	"go-skeleton/src/application/pong"
+	"go-skeleton/src/infrastructure/bus/command"
+	"go-skeleton/src/infrastructure/bus/query"
 	"go-skeleton/src/infrastructure/http/get"
+	"go-skeleton/src/infrastructure/http/post"
 )
 
 const DEFAULT_PING_URL = "/ping"
+const DEFAULT_PONG_URL = "/pong"
 
 type Routes struct {
 	gin     *gin.Engine
@@ -18,16 +22,25 @@ type Routes struct {
 }
 
 func (g *Routes) BindRoutes(cfg Config) {
-	g.gin.GET(DEFAULT_PING_URL, g.buildHandlersMapping)
+	g.gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
+	g.gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
 	g.gin.GET("/"+cfg.DefaultPrometheusMetric, prometheusHandler())
 }
 
-func (g *Routes) buildHandlersMapping(c *gin.Context) {
-	pingCommandHandler := application.NewPingApplication(c.Request.URL.Query())
-	cbManager := domain.NewCommandBus()
-	cbManager.RegisterHandler(application.PingCommand{}, pingCommandHandler)
+func (g *Routes) buildPingHandlersMapping(c *gin.Context) {
+	pingQueryHandler := ping.NewPingApplication(c, g.Metrics)
+	qbManager := query.NewQueryBus()
+	qbManager.RegisterHandler(ping.PingQuery{}, pingQueryHandler)
 	pingController := get.NewPingHandler(g.Metrics)
-	pingController.Ping(c, cbManager)
+	pingController.Ping(c, qbManager)
+}
+
+func (g *Routes) buildPongHandlersMapping(c *gin.Context) {
+	pongCommandHandler := pong.NewPongApplication(c, g.Metrics)
+	cbManager := command.NewCommandBus()
+	cbManager.RegisterHandler(pong.PongCommand{}, pongCommandHandler)
+	pongController := post.NewPongHandler(g.Metrics)
+	pongController.Pong(c, cbManager)
 }
 
 func prometheusHandler() gin.HandlerFunc {

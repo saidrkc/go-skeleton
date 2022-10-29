@@ -1,7 +1,4 @@
-//go:build unit
-// +build unit
-
-package command_test
+package query_test
 
 import (
 	"net/http"
@@ -9,15 +6,16 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/assert/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/prometheus/client_golang/prometheus"
 
 	metrics2 "go-skeleton/infrastructure/metrics"
-	"go-skeleton/src/application/pong"
-	"go-skeleton/src/infrastructure/bus/command"
+	"go-skeleton/src/application/ping"
+	"go-skeleton/src/infrastructure/bus/query"
 )
 
-func TestCommandBus_Exec(t *testing.T) {
+func TestQueryBus_Exec(t *testing.T) {
 	var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "http_response_time_seconds",
 		Help: "Duration of HTTP requests.",
@@ -33,8 +31,14 @@ func TestCommandBus_Exec(t *testing.T) {
 	metrics.EXPECT().NewTimer(gomock.Any()).Return(timer)
 	metrics.EXPECT().IncrementTotalRequests(gomock.Any()).Return()
 	metrics.EXPECT().IncrementResponseStatus(gomock.Any()).Return()
-	pongCommandHandler := pong.NewPongApplication(ctx, metrics)
-	commandbus := command.NewCommandBus()
-	commandbus.RegisterHandler(pong.PongCommand{}, pongCommandHandler)
-	commandbus.Exec(pong.PongCommand{})
+
+	t.Run("Execute query bus searching for a good response", func(t *testing.T) {
+		pongCommandHandler := ping.NewPingApplication(ctx, metrics)
+		queryBus := query.NewQueryBus()
+		queryBus.RegisterHandler(ping.PingQuery{}, pongCommandHandler)
+		rsp, _ := queryBus.Exec(ping.PingQuery{})
+		expected := ping.PingQueryResponse{Resp: "{'test'}"}
+		assert.Equal(t, rsp, expected)
+	})
+
 }

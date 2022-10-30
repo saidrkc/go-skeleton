@@ -17,7 +17,7 @@ import (
 	"go-skeleton/src/infrastructure/bus/command"
 )
 
-func TestCommandBus_Exec(t *testing.T) {
+func Test_ExecCommandBus(t *testing.T) {
 	var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "http_response_time_seconds",
 		Help: "Duration of HTTP requests.",
@@ -37,4 +37,5 @@ func TestCommandBus_Exec(t *testing.T) {
 	commandbus := command.NewCommandBus()
 	commandbus.RegisterHandler(pong.PongCommand{}, pongCommandHandler)
 	commandbus.Exec(pong.PongCommand{})
+	assert.Equal(pong.Pong{}, pong.Pong{})
 }

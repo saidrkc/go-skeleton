@@ -1,4 +1,4 @@
-//go:generate go run github.com/golang/mock/mockgen -source=$GOFILE -destination=./mock_$GOFILE -package=$GOPACKAGE
+//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
 package metrics
 
 import (
@@ -13,6 +13,7 @@ type MetricsInterface interface {
 	IncrementTotalRequests(method string)
 	IncrementResponseStatus(status int)
 }
+
 type Metrics struct {
 	HttpResponseTime *prometheus.HistogramVec
 	TotalRequest     *prometheus.CounterVec

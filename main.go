@@ -1,7 +1,12 @@
 package main
 
-import "go-skeleton/cmd/app"
+import (
+	"go-skeleton/cmd/app"
+	"go-skeleton/cmd/http"
+)
 
 func main() {
-	app.NewEngine()
+	srv := http.NewHttpServer()
+	engine := app.NewEngine(srv, srv.Metrics)
+	engine.RunEngine()
 }

@@ -37,9 +37,9 @@ func TestQueryBus_Exec(t *testing.T) {
 		metrics.EXPECT().NewTimer(gomock.Any()).Return(timer)
 		metrics.EXPECT().IncrementTotalRequests(gomock.Any()).Return()
 		metrics.EXPECT().IncrementResponseStatus(gomock.Any()).Return()
-		pongCommandHandler := ping.NewPingApplication(ctx, metrics)
+		pingQueryHandler := ping.NewPingApplication(ctx, metrics)
 		queryBus := query.NewQueryBus()
-		queryBus.RegisterHandler(ping.PingQuery{}, pongCommandHandler)
+		queryBus.RegisterHandler(ping.PingQuery{}, pingQueryHandler)
 		rsp, _ := queryBus.Exec(ping.PingQuery{})
 		expected := ping.PingQueryResponse{Resp: "{'test'}"}
 		assert.Equal(t, rsp, expected)
@@ -49,6 +49,18 @@ func TestQueryBus_Exec(t *testing.T) {
 		queryBus := query.NewQueryBus()
 		_, err := queryBus.Exec(ping.PingQuery{})
 		expected := errors.New("there not any QueryHandler associate to query gopher_PingQuery")
+		assert.Equal(t, err.Error(), expected.Error())
+	})
+
+	t.Run("Register same handler two times", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		metrics := metrics2.NewMockMetricsInterface(ctrl)
+		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+		pingQueryHandler := ping.NewPingApplication(ctx, metrics)
+		queryBus := query.NewQueryBus()
+		queryBus.RegisterHandler(ping.PingQuery{}, pingQueryHandler)
+		err := queryBus.RegisterHandler(ping.PingQuery{}, pingQueryHandler)
+		expected := errors.New("the Command gopher_PingQuery is already registered")
 		assert.Equal(t, err.Error(), expected.Error())
 	})
 

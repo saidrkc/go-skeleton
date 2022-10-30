@@ -28,7 +28,7 @@ func (cb *QueryBus) RegisterHandler(c Query, ch QueryHandler) error {
 
 	_, ok := cb.handlersMap[cmdID]
 	if ok {
-		return fmt.Errorf("the Command %s is already register", cmdID)
+		return fmt.Errorf("the Command %s is already registered", cmdID)
 	}
 	cb.handlersMap[cmdID] = ch
 	return nil

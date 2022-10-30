@@ -3,7 +3,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Go Coverage Report</title>
+		<title>app: Go Coverage Report</title>
 		<style>
 			body {
 				background: black;
@@ -55,6 +55,36 @@
 			<div id="nav">
 				<select id="files">
 				
+				<option value="file0">go-skeleton/cmd/app/engine.go (0.0%)</option>
+				
+				<option value="file1">go-skeleton/cmd/http/routes.go (0.0%)</option>
+				
+				<option value="file2">go-skeleton/cmd/http/server.go (0.0%)</option>
+				
+				<option value="file3">go-skeleton/infrastructure/metrics/metrics.go (0.0%)</option>
+				
+				<option value="file4">go-skeleton/infrastructure/metrics/mock_metrics.go (100.0%)</option>
+				
+				<option value="file5">go-skeleton/main.go (0.0%)</option>
+				
+				<option value="file6">go-skeleton/src/application/ping/ping.go (100.0%)</option>
+				
+				<option value="file7">go-skeleton/src/application/ping/ping_query.go (50.0%)</option>
+				
+				<option value="file8">go-skeleton/src/application/ping/ping_query_response.go (100.0%)</option>
+				
+				<option value="file9">go-skeleton/src/application/pong/pong.go (100.0%)</option>
+				
+				<option value="file10">go-skeleton/src/application/pong/pong_command.go (50.0%)</option>
+				
+				<option value="file11">go-skeleton/src/infrastructure/bus/command/commandbus.go (100.0%)</option>
+				
+				<option value="file12">go-skeleton/src/infrastructure/bus/query/querybus.go (100.0%)</option>
+				
+				<option value="file13">go-skeleton/src/infrastructure/http/get/ping.go (0.0%)</option>
+				
+				<option value="file14">go-skeleton/src/infrastructure/http/post/pong.go (0.0%)</option>
+				
 				</select>
 			</div>
 			<div id="legend">
@@ -75,6 +105,587 @@
 			</div>
 		</div>
 		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package app
+
+import (
+        "fmt"
+        "log"
+        "os"
+        "strconv"
+
+        "github.com/joho/godotenv"
+        "github.com/prometheus/client_golang/prometheus"
+
+        "go-skeleton/cmd/http"
+        "go-skeleton/infrastructure/metrics"
+)
+
+type Engine struct {
+        Server  http.Server
+        Metrics metrics.Metrics
+}
+
+const defaultEnv = "etc/dev/env"
+const httpServerAddress = "HTTP_SERVER_ADDRESS"
+const httpServerPort = "HTTP_SERVER_PORT"
+const defaultPrometheusUrl = "DEFAULT_PROMETHEUS_URL"
+
+func NewEngine() Engine <span class="cov0" title="0">{
+        err := godotenv.Load(defaultEnv)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Error loading .env file")
+        }</span>
+
+        <span class="cov0" title="0">port, _ := strconv.Atoi(os.Getenv(httpServerPort))
+        var cfg = http.Config{
+                DefaultPrometheusMetric: os.Getenv(defaultPrometheusUrl),
+                AddressPort:             port,
+                AddressIp:               os.Getenv(httpServerAddress),
+        }
+
+        mtrcs := metricsRegister()
+        srv := http.NewHttpServer(cfg, mtrcs)
+
+        srv.GinEngine.Run(fmt.Sprintf(": %d", cfg.AddressPort))
+
+        return Engine{
+                Server:  srv,
+                Metrics: mtrcs,
+        }</span>
+}
+
+func metricsRegister() metrics.Metrics <span class="cov0" title="0">{
+        var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+                Name: "http_response_time_seconds",
+                Help: "Duration of HTTP requests.",
+        }, []string{"path"})
+        var totalRequests = prometheus.NewCounterVec(
+                prometheus.CounterOpts{
+                        Name: "http_requests_total",
+                        Help: "Number of get requests.",
+                },
+                []string{"path"},
+        )
+        var responseStatus = prometheus.NewCounterVec(
+                prometheus.CounterOpts{
+                        Name: "response_status",
+                        Help: "Status of HTTP response",
+                },
+                []string{"status"},
+        )
+        prometheus.MustRegister(httpDuration)
+        prometheus.MustRegister(totalRequests)
+        prometheus.MustRegister(responseStatus)
+        return metrics.NewMetrics(httpDuration, totalRequests, responseStatus)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package http
+
+import (
+        "github.com/gin-gonic/gin"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
+
+        "go-skeleton/infrastructure/metrics"
+        "go-skeleton/src/application/ping"
+        "go-skeleton/src/application/pong"
+        "go-skeleton/src/infrastructure/bus/command"
+        "go-skeleton/src/infrastructure/bus/query"
+        "go-skeleton/src/infrastructure/http/get"
+        "go-skeleton/src/infrastructure/http/post"
+)
+
+const DEFAULT_PING_URL = "/ping"
+const DEFAULT_PONG_URL = "/pong"
+
+type Routes struct {
+        gin     *gin.Engine
+        Metrics metrics.Metrics
+}
+
+func (g *Routes) BindRoutes(cfg Config) <span class="cov0" title="0">{
+        g.gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
+        g.gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
+        g.gin.GET("/"+cfg.DefaultPrometheusMetric, prometheusHandler())
+}</span>
+
+func (g *Routes) buildPingHandlersMapping(c *gin.Context) <span class="cov0" title="0">{
+        pingQueryHandler := ping.NewPingApplication(c, g.Metrics)
+        qbManager := query.NewQueryBus()
+        qbManager.RegisterHandler(ping.PingQuery{}, pingQueryHandler)
+        pingController := get.NewPingHandler(g.Metrics)
+        pingController.Ping(c, qbManager)
+}</span>
+
+func (g *Routes) buildPongHandlersMapping(c *gin.Context) <span class="cov0" title="0">{
+        pongCommandHandler := pong.NewPongApplication(c, g.Metrics)
+        cbManager := command.NewCommandBus()
+        cbManager.RegisterHandler(pong.PongCommand{}, pongCommandHandler)
+        pongController := post.NewPongHandler(g.Metrics)
+        pongController.Pong(c, cbManager)
+}</span>
+
+func prometheusHandler() gin.HandlerFunc <span class="cov0" title="0">{
+        h := promhttp.Handler()
+
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                h.ServeHTTP(c.Writer, c.Request)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package http
+
+import (
+        "github.com/gin-gonic/gin"
+
+        "go-skeleton/infrastructure/metrics"
+)
+
+type Config struct {
+        DefaultPrometheusMetric string
+        AddressPort             int
+        AddressIp               string
+}
+
+type Server struct {
+        GinEngine *gin.Engine
+}
+
+func NewHttpServer(cfg Config, metrics metrics.Metrics) Server <span class="cov0" title="0">{
+        r := gin.New()
+        routes := Routes{gin: r, Metrics: metrics}
+        routes.BindRoutes(cfg)
+
+        return Server{
+                GinEngine: r,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
+package metrics
+
+import (
+        "strconv"
+
+        "github.com/prometheus/client_golang/prometheus"
+)
+
+type MetricsInterface interface {
+        AddToResponseTime(method string)
+        NewTimer(method string) *prometheus.Timer
+        IncrementTotalRequests(method string)
+        IncrementResponseStatus(status int)
+}
+
+type Metrics struct {
+        HttpResponseTime *prometheus.HistogramVec
+        TotalRequest     *prometheus.CounterVec
+        ResponseStatus   *prometheus.CounterVec
+}
+
+func NewMetrics(HttpResponseTime *prometheus.HistogramVec, TotalRequest *prometheus.CounterVec, ResponseStatus *prometheus.CounterVec) Metrics <span class="cov0" title="0">{
+        return Metrics{
+                HttpResponseTime,
+                TotalRequest,
+                ResponseStatus,
+        }
+}</span>
+
+func (m Metrics) AddToResponseTime(method string) <span class="cov0" title="0">{
+        m.HttpResponseTime.WithLabelValues(method)
+}</span>
+
+func (m Metrics) NewTimer(method string) *prometheus.Timer <span class="cov0" title="0">{
+        return prometheus.NewTimer(m.HttpResponseTime.WithLabelValues(method))
+}</span>
+
+func (m Metrics) IncrementTotalRequests(method string) <span class="cov0" title="0">{
+        m.TotalRequest.WithLabelValues(method).Inc()
+}</span>
+
+func (m Metrics) IncrementResponseStatus(status int) <span class="cov0" title="0">{
+        m.ResponseStatus.WithLabelValues(strconv.Itoa(status)).Inc()
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: metrics.go
+
+// Package metrics is a generated GoMock package.
+package metrics
+
+import (
+        reflect "reflect"
+
+        gomock "github.com/golang/mock/gomock"
+        prometheus "github.com/prometheus/client_golang/prometheus"
+)
+
+// MockMetricsInterface is a mock of MetricsInterface interface.
+type MockMetricsInterface struct {
+        ctrl     *gomock.Controller
+        recorder *MockMetricsInterfaceMockRecorder
+}
+
+// MockMetricsInterfaceMockRecorder is the mock recorder for MockMetricsInterface.
+type MockMetricsInterfaceMockRecorder struct {
+        mock *MockMetricsInterface
+}
+
+// NewMockMetricsInterface creates a new mock instance.
+func NewMockMetricsInterface(ctrl *gomock.Controller) *MockMetricsInterface <span class="cov7" title="4">{
+        mock := &amp;MockMetricsInterface{ctrl: ctrl}
+        mock.recorder = &amp;MockMetricsInterfaceMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMetricsInterface) EXPECT() *MockMetricsInterfaceMockRecorder <span class="cov10" title="8">{
+        return m.recorder
+}</span>
+
+// AddToResponseTime mocks base method.
+func (m *MockMetricsInterface) AddToResponseTime(method string) <span class="cov4" title="2">{
+        m.ctrl.T.Helper()
+        m.ctrl.Call(m, "AddToResponseTime", method)
+}</span>
+
+// AddToResponseTime indicates an expected call of AddToResponseTime.
+func (mr *MockMetricsInterfaceMockRecorder) AddToResponseTime(method interface{}) *gomock.Call <span class="cov4" title="2">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToResponseTime", reflect.TypeOf((*MockMetricsInterface)(nil).AddToResponseTime), method)
+}</span>
+
+// IncrementResponseStatus mocks base method.
+func (m *MockMetricsInterface) IncrementResponseStatus(status int) <span class="cov4" title="2">{
+        m.ctrl.T.Helper()
+        m.ctrl.Call(m, "IncrementResponseStatus", status)
+}</span>
+
+// IncrementResponseStatus indicates an expected call of IncrementResponseStatus.
+func (mr *MockMetricsInterfaceMockRecorder) IncrementResponseStatus(status interface{}) *gomock.Call <span class="cov4" title="2">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementResponseStatus", reflect.TypeOf((*MockMetricsInterface)(nil).IncrementResponseStatus), status)
+}</span>
+
+// IncrementTotalRequests mocks base method.
+func (m *MockMetricsInterface) IncrementTotalRequests(method string) <span class="cov4" title="2">{
+        m.ctrl.T.Helper()
+        m.ctrl.Call(m, "IncrementTotalRequests", method)
+}</span>
+
+// IncrementTotalRequests indicates an expected call of IncrementTotalRequests.
+func (mr *MockMetricsInterfaceMockRecorder) IncrementTotalRequests(method interface{}) *gomock.Call <span class="cov4" title="2">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementTotalRequests", reflect.TypeOf((*MockMetricsInterface)(nil).IncrementTotalRequests), method)
+}</span>
+
+// NewTimer mocks base method.
+func (m *MockMetricsInterface) NewTimer(method string) *prometheus.Timer <span class="cov4" title="2">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "NewTimer", method)
+        ret0, _ := ret[0].(*prometheus.Timer)
+        return ret0
+}</span>
+
+// NewTimer indicates an expected call of NewTimer.
+func (mr *MockMetricsInterfaceMockRecorder) NewTimer(method interface{}) *gomock.Call <span class="cov4" title="2">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewTimer", reflect.TypeOf((*MockMetricsInterface)(nil).NewTimer), method)
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package main
+
+import "go-skeleton/cmd/app"
+
+func main() <span class="cov0" title="0">{
+        app.NewEngine()
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package ping
+
+import (
+        "github.com/gin-gonic/gin"
+
+        "go-skeleton/infrastructure/metrics"
+        "go-skeleton/src/infrastructure/bus/query"
+)
+
+type Ping struct {
+        Context *gin.Context
+        Metrics metrics.MetricsInterface
+}
+
+func (p Ping) Handle(query query.Query) (query.QueryResponse, error) <span class="cov1" title="1">{
+        p.Metrics.AddToResponseTime(p.Context.Request.Method)
+        timer := p.Metrics.NewTimer(p.Context.Request.Method)
+        defer timer.ObserveDuration()
+        p.Metrics.IncrementTotalRequests(p.Context.Request.Method)
+        p.Metrics.IncrementResponseStatus(p.Context.Writer.Status())
+        return NewPingResponse("{'test'}"), nil
+}</span>
+
+func NewPingApplication(context *gin.Context, metrics metrics.MetricsInterface) Ping <span class="cov10" title="2">{
+        return Ping{
+                Context: context,
+                Metrics: metrics,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package ping
+
+import (
+        "github.com/gin-gonic/gin"
+
+        "go-skeleton/infrastructure/metrics"
+)
+
+type PingQuery struct {
+        Context *gin.Context
+        Metrics metrics.Metrics
+}
+
+func (p PingQuery) PingQuery() {<span class="cov0" title="0">}</span>
+
+func (p PingQuery) QueryID() string <span class="cov10" title="5">{
+        return "gopher_PingQuery"
+}</span>
+
+func NewQuery(c *gin.Context, metrics metrics.Metrics) PingQuery <span class="cov0" title="0">{
+        return PingQuery{
+                Context: c,
+                Metrics: metrics,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package ping
+
+type PingQueryResponse struct {
+        Resp string
+}
+
+func (p PingQueryResponse) Response() {<span class="cov0" title="0">}</span>
+
+func NewPingResponse(queryResponse string) PingQueryResponse <span class="cov8" title="1">{
+        return PingQueryResponse{
+                Resp: queryResponse,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package pong
+
+import (
+        "github.com/gin-gonic/gin"
+
+        "go-skeleton/infrastructure/metrics"
+        "go-skeleton/src/infrastructure/bus/command"
+)
+
+type Pong struct {
+        Context *gin.Context
+        Metrics metrics.MetricsInterface
+}
+
+func (p Pong) Handle(command command.Command) error <span class="cov1" title="1">{
+        p.Metrics.AddToResponseTime(p.Context.Request.Method)
+        timer := p.Metrics.NewTimer(p.Context.Request.Method)
+        defer timer.ObserveDuration()
+        p.Metrics.IncrementTotalRequests(p.Context.Request.Method)
+        p.Metrics.IncrementResponseStatus(p.Context.Writer.Status())
+        return nil
+}</span>
+
+func NewPongApplication(context *gin.Context, metrics metrics.MetricsInterface) Pong <span class="cov10" title="2">{
+        return Pong{
+                Context: context,
+                Metrics: metrics,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package pong
+
+import (
+        "github.com/gin-gonic/gin"
+
+        "go-skeleton/infrastructure/metrics"
+)
+
+type PongCommand struct {
+        Context *gin.Context
+        Metrics metrics.Metrics
+}
+
+func (p PongCommand) PingCommand() {<span class="cov0" title="0">}</span>
+
+func (p PongCommand) CommandID() string <span class="cov10" title="5">{
+        return "gopher_PongCommand"
+}</span>
+
+func NewCommand(c *gin.Context, metrics metrics.Metrics) PongCommand <span class="cov0" title="0">{
+        return PongCommand{
+                Context: c,
+                Metrics: metrics,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package command
+
+import (
+        "fmt"
+)
+
+type Command interface {
+        CommandID() string
+        PingCommand()
+}
+
+type CommandHandler interface {
+        Handle(Command) error
+}
+
+type CommandBus struct {
+        handlersMap map[string]CommandHandler
+}
+
+func NewCommandBus() CommandBus <span class="cov10" title="3">{
+        return CommandBus{handlersMap: make(map[string]CommandHandler)}
+}</span>
+
+func (cb *CommandBus) RegisterHandler(c Command, ch CommandHandler) error <span class="cov10" title="3">{
+        cmdID := c.CommandID()
+
+        _, ok := cb.handlersMap[cmdID]
+        if ok </span><span class="cov1" title="1">{
+                return fmt.Errorf("the Command %s is already registered", cmdID)
+        }</span>
+        <span class="cov6" title="2">cb.handlersMap[cmdID] = ch
+        return nil</span>
+}
+
+func (cb CommandBus) Exec(c Command) error <span class="cov6" title="2">{
+        cmdID := c.CommandID()
+
+        ch, ok := cb.handlersMap[cmdID]
+        if !ok </span><span class="cov1" title="1">{
+                return fmt.Errorf("there not any CommandHandler associate to Command %s", cmdID)
+        }</span>
+        <span class="cov1" title="1">return ch.Handle(c)</span>
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package query
+
+import "fmt"
+
+type Query interface {
+        QueryID() string
+        PingQuery()
+}
+
+type QueryHandler interface {
+        Handle(Query) (QueryResponse, error)
+}
+
+type QueryResponse interface {
+        Response()
+}
+
+type QueryBus struct {
+        handlersMap map[string]QueryHandler
+}
+
+func NewQueryBus() QueryBus <span class="cov10" title="3">{
+        return QueryBus{handlersMap: make(map[string]QueryHandler)}
+}</span>
+
+func (cb *QueryBus) RegisterHandler(c Query, ch QueryHandler) error <span class="cov10" title="3">{
+        cmdID := c.QueryID()
+
+        _, ok := cb.handlersMap[cmdID]
+        if ok </span><span class="cov1" title="1">{
+                return fmt.Errorf("the Command %s is already registered", cmdID)
+        }</span>
+        <span class="cov6" title="2">cb.handlersMap[cmdID] = ch
+        return nil</span>
+}
+
+func (cb QueryBus) Exec(c Query) (QueryResponse, error) <span class="cov6" title="2">{
+        cmdID := c.QueryID()
+
+        ch, ok := cb.handlersMap[cmdID]
+        if !ok </span><span class="cov1" title="1">{
+                return nil, fmt.Errorf("there not any QueryHandler associate to query %s", cmdID)
+        }</span>
+        <span class="cov1" title="1">rsp, err := ch.Handle(c)
+        return rsp, err</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package get
+
+import (
+        "time"
+
+        "github.com/gin-gonic/gin"
+
+        "go-skeleton/infrastructure/metrics"
+        "go-skeleton/src/application/ping"
+        "go-skeleton/src/infrastructure/bus/query"
+)
+
+type PingHandler struct {
+        metrics metrics.Metrics
+}
+
+func (h PingHandler) Ping(c *gin.Context, queryBus query.QueryBus) <span class="cov0" title="0">{
+        time.Sleep(time.Second * 3)
+        pingQuery := ping.NewQuery(c, h.metrics)
+        rsp, _ := queryBus.Exec(pingQuery)
+        c.JSON(200, rsp)
+}</span>
+
+func NewPingHandler(metrics metrics.Metrics) PingHandler <span class="cov0" title="0">{
+        return PingHandler{metrics: metrics}
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package post
+
+import (
+        "time"
+
+        "github.com/gin-gonic/gin"
+
+        "go-skeleton/infrastructure/metrics"
+        "go-skeleton/src/application/pong"
+        "go-skeleton/src/infrastructure/bus/command"
+)
+
+type PongHandler struct {
+        metrics metrics.Metrics
+}
+
+func (h PongHandler) Pong(c *gin.Context, commandbus command.CommandBus) <span class="cov0" title="0">{
+        time.Sleep(time.Second * 1)
+        pongCommand := pong.NewCommand(c, h.metrics)
+        commandbus.Exec(pongCommand)
+        c.JSON(200, "{'ok'}")
+}</span>
+
+func NewPongHandler(metrics metrics.Metrics) PongHandler <span class="cov0" title="0">{
+        return PongHandler{metrics: metrics}
+}</span>
+</pre>
 		
 		</div>
 	</body>

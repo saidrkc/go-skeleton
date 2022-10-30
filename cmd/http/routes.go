@@ -15,16 +15,17 @@ import (
 
 const DEFAULT_PING_URL = "/ping"
 const DEFAULT_PONG_URL = "/pong"
+const DEFAULT_PROMETHEUS_METRICS = "/metrics"
 
 type Routes struct {
 	gin     *gin.Engine
 	Metrics metrics.Metrics
 }
 
-func (g *Routes) BindRoutes(cfg Config) {
+func (g *Routes) BindRoutes() {
 	g.gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
 	g.gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
-	g.gin.GET("/"+cfg.DefaultPrometheusMetric, prometheusHandler())
+	g.gin.GET(DEFAULT_PROMETHEUS_METRICS, prometheusHandler())
 }
 
 func (g *Routes) buildPingHandlersMapping(c *gin.Context) {

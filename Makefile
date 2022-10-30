@@ -12,10 +12,12 @@ up: ## Create docker's
 	docker-compose up -d
 
 
-go-test: go-mocks ## Generate test report
-	go test -v ./... -covermode=count -coverpkg=./... -coverprofile infrastructure/coverage/coverage.out
-	go tool cover -html infrastructure/coverage/coverage.out -o infrastructure/coverage/coverage.html
+go-test: go-mocks ##Test
+	go test -v --tags=unit ./...
 
+go-test-coverage:
+	go test -v --tags=unit ./... -covermode=count -coverpkg=./... -coverprofile infrastructure/coverage/coverage.out
+	go tool cover -html infrastructure/coverage/coverage.out -o infrastructure/coverage/coverage.html
 
 go-install-vendor: ## Install dependencies
 	go mod vendor
@@ -23,3 +25,8 @@ go-install-vendor: ## Install dependencies
 
 go-update-vendor: ## Updates dependencies
 	go mod tidy && go mod vendor
+
+go-test-unit:
+	go test -v -tags=unit ./...
+
+

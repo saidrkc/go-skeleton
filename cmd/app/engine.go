@@ -7,11 +7,14 @@ import (
 	"strconv"
 
 	"github.com/joho/godotenv"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"go-skeleton/cmd/http"
 	"go-skeleton/infrastructure/metrics"
 )
+
+type EngineInterface interface {
+	NewEngine() Engine
+}
 
 type Engine struct {
 	Server  http.Server
@@ -23,7 +26,14 @@ const httpServerAddress = "HTTP_SERVER_ADDRESS"
 const httpServerPort = "HTTP_SERVER_PORT"
 const defaultPrometheusUrl = "DEFAULT_PROMETHEUS_URL"
 
-func NewEngine() Engine {
+func NewEngine(server http.Server, metrics metrics.Metrics) Engine {
+	return Engine{
+		server,
+		metrics,
+	}
+}
+
+func (e *Engine) RunEngine() {
 	err := godotenv.Load(defaultEnv)
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -35,39 +45,6 @@ func NewEngine() Engine {
 		AddressPort:             port,
 		AddressIp:               os.Getenv(httpServerAddress),
 	}
-
-	mtrcs := metricsRegister()
-	srv := http.NewHttpServer(cfg, mtrcs)
-
-	srv.GinEngine.Run(fmt.Sprintf(": %d", cfg.AddressPort))
-
-	return Engine{
-		Server:  srv,
-		Metrics: mtrcs,
-	}
-}
-
-func metricsRegister() metrics.Metrics {
-	var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "http_response_time_seconds",
-		Help: "Duration of HTTP requests.",
-	}, []string{"path"})
-	var totalRequests = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "Number of get requests.",
-		},
-		[]string{"path"},
-	)
-	var responseStatus = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "response_status",
-			Help: "Status of HTTP response",
-		},
-		[]string{"status"},
-	)
-	prometheus.MustRegister(httpDuration)
-	prometheus.MustRegister(totalRequests)
-	prometheus.MustRegister(responseStatus)
-	return metrics.NewMetrics(httpDuration, totalRequests, responseStatus)
+	e.Server.BuildHttpServer(e.Metrics)
+	e.Server.GinEngine.Run(fmt.Sprintf(": %d", cfg.AddressPort))
 }

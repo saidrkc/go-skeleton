@@ -14,7 +14,7 @@ type PongCommand struct {
 func (p PongCommand) PingCommand() {}
 
 func (p PongCommand) CommandID() string {
-	return "gopher_PingCommand"
+	return "gopher_PongCommand"
 }
 
 func NewCommand(c *gin.Context, metrics metrics.Metrics) PongCommand {

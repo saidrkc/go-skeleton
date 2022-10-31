@@ -1,3 +1,4 @@
+//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
 package http
 
 import (
@@ -7,6 +8,11 @@ import (
 	"go-skeleton/infrastructure/metrics"
 )
 
+type HttpServer interface {
+	BuildHttpServer(metrics metrics.MetricsInterface)
+	Gin() *gin.Engine
+}
+
 type Config struct {
 	DefaultPrometheusMetric string
 	AddressPort             int
@@ -15,19 +21,23 @@ type Config struct {
 
 type Server struct {
 	GinEngine *gin.Engine
-	Metrics   metrics.Metrics
+	Metrics   metrics.MetricsInterface
 }
 
-func NewHttpServer() Server {
-	return Server{
+func NewHttpServer() *Server {
+	return &Server{
 		GinEngine: gin.New(),
 		Metrics:   metricsRegister(),
 	}
 }
 
-func (srv *Server) BuildHttpServer(metrics metrics.Metrics) {
-	routes := Routes{gin: srv.GinEngine, Metrics: metrics}
+func (srv *Server) BuildHttpServer(metrics metrics.MetricsInterface) {
+	routes := Routes{Gin: srv.GinEngine, Metrics: metrics}
 	routes.BindRoutes()
+}
+
+func (srv *Server) Gin() *gin.Engine {
+	return srv.GinEngine
 }
 
 func metricsRegister() metrics.Metrics {

@@ -11,7 +11,7 @@ import (
 )
 
 type PingHandler struct {
-	metrics metrics.Metrics
+	metrics metrics.MetricsInterface
 }
 
 func (h PingHandler) Ping(c *gin.Context, queryBus query.QueryBus) {
@@ -21,6 +21,6 @@ func (h PingHandler) Ping(c *gin.Context, queryBus query.QueryBus) {
 	c.JSON(200, rsp)
 }
 
-func NewPingHandler(metrics metrics.Metrics) PingHandler {
+func NewPingHandler(metrics metrics.MetricsInterface) PingHandler {
 	return PingHandler{metrics: metrics}
 }

@@ -11,7 +11,7 @@ import (
 )
 
 type PongHandler struct {
-	metrics metrics.Metrics
+	metrics metrics.MetricsInterface
 }
 
 func (h PongHandler) Pong(c *gin.Context, commandbus command.CommandBus) {
@@ -21,6 +21,6 @@ func (h PongHandler) Pong(c *gin.Context, commandbus command.CommandBus) {
 	c.JSON(200, "{'ok'}")
 }
 
-func NewPongHandler(metrics metrics.Metrics) PongHandler {
+func NewPongHandler(metrics metrics.MetricsInterface) PongHandler {
 	return PongHandler{metrics: metrics}
 }

@@ -8,7 +8,7 @@ import (
 
 type PingQuery struct {
 	Context *gin.Context
-	Metrics metrics.Metrics
+	Metrics metrics.MetricsInterface
 }
 
 func (p PingQuery) PingQuery() {}
@@ -17,7 +17,7 @@ func (p PingQuery) QueryID() string {
 	return "gopher_PingQuery"
 }
 
-func NewQuery(c *gin.Context, metrics metrics.Metrics) PingQuery {
+func NewQuery(c *gin.Context, metrics metrics.MetricsInterface) PingQuery {
 	return PingQuery{
 		Context: c,
 		Metrics: metrics,

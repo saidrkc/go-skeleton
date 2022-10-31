@@ -1,4 +1,4 @@
-package app
+package engine
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ type EngineInterface interface {
 }
 
 type Engine struct {
-	Server  http.Server
-	Metrics metrics.Metrics
+	Server  http.HttpServer
+	Metrics metrics.MetricsInterface
 }
 
 const defaultEnv = "etc/dev/env"
@@ -26,17 +26,22 @@ const httpServerAddress = "HTTP_SERVER_ADDRESS"
 const httpServerPort = "HTTP_SERVER_PORT"
 const defaultPrometheusUrl = "DEFAULT_PROMETHEUS_URL"
 
-func NewEngine(server http.Server, metrics metrics.Metrics) Engine {
+func NewEngine(server http.HttpServer, metrics metrics.MetricsInterface) Engine {
 	return Engine{
 		server,
 		metrics,
 	}
 }
 
-func (e *Engine) RunEngine() {
-	err := godotenv.Load(defaultEnv)
+func (e *Engine) BuildEngine() http.Config {
+	pwd, _ := os.Getwd()
+	path := fmt.Sprintf("%s/../../%s", pwd, defaultEnv)
+	err := godotenv.Load(path)
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		err := godotenv.Load(defaultEnv)
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	port, _ := strconv.Atoi(os.Getenv(httpServerPort))
@@ -46,5 +51,9 @@ func (e *Engine) RunEngine() {
 		AddressIp:               os.Getenv(httpServerAddress),
 	}
 	e.Server.BuildHttpServer(e.Metrics)
-	e.Server.GinEngine.Run(fmt.Sprintf(": %d", cfg.AddressPort))
+	return cfg
+}
+
+func (e *Engine) RunEngine(port int) {
+	e.Server.Gin().Run(fmt.Sprintf(": %d", port))
 }

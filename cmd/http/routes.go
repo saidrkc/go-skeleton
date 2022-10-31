@@ -18,14 +18,14 @@ const DEFAULT_PONG_URL = "/pong"
 const DEFAULT_PROMETHEUS_METRICS = "/metrics"
 
 type Routes struct {
-	gin     *gin.Engine
-	Metrics metrics.Metrics
+	Gin     *gin.Engine
+	Metrics metrics.MetricsInterface
 }
 
 func (g *Routes) BindRoutes() {
-	g.gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
-	g.gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
-	g.gin.GET(DEFAULT_PROMETHEUS_METRICS, prometheusHandler())
+	g.Gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
+	g.Gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
+	g.Gin.GET(DEFAULT_PROMETHEUS_METRICS, prometheusHandler())
 }
 
 func (g *Routes) buildPingHandlersMapping(c *gin.Context) {

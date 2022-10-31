@@ -3,7 +3,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>app: Go Coverage Report</title>
+		<title>engine: Go Coverage Report</title>
 		<style>
 			body {
 				background: black;
@@ -55,35 +55,37 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">go-skeleton/cmd/app/engine.go (0.0%)</option>
+				<option value="file0">go-skeleton/cmd/engine/engine.go (69.2%)</option>
 				
-				<option value="file1">go-skeleton/cmd/http/routes.go (0.0%)</option>
+				<option value="file1">go-skeleton/cmd/http/mock_server.go (57.1%)</option>
 				
-				<option value="file2">go-skeleton/cmd/http/server.go (0.0%)</option>
+				<option value="file2">go-skeleton/cmd/http/routes.go (31.2%)</option>
 				
-				<option value="file3">go-skeleton/infrastructure/metrics/metrics.go (0.0%)</option>
+				<option value="file3">go-skeleton/cmd/http/server.go (100.0%)</option>
 				
-				<option value="file4">go-skeleton/infrastructure/metrics/mock_metrics.go (100.0%)</option>
+				<option value="file4">go-skeleton/infrastructure/metrics/metrics.go (100.0%)</option>
 				
-				<option value="file5">go-skeleton/main.go (0.0%)</option>
+				<option value="file5">go-skeleton/infrastructure/metrics/mock_metrics.go (100.0%)</option>
 				
-				<option value="file6">go-skeleton/src/application/ping/ping.go (100.0%)</option>
+				<option value="file6">go-skeleton/main.go (0.0%)</option>
 				
-				<option value="file7">go-skeleton/src/application/ping/ping_query.go (50.0%)</option>
+				<option value="file7">go-skeleton/src/application/ping/ping.go (100.0%)</option>
 				
-				<option value="file8">go-skeleton/src/application/ping/ping_query_response.go (100.0%)</option>
+				<option value="file8">go-skeleton/src/application/ping/ping_query.go (50.0%)</option>
 				
-				<option value="file9">go-skeleton/src/application/pong/pong.go (100.0%)</option>
+				<option value="file9">go-skeleton/src/application/ping/ping_query_response.go (100.0%)</option>
 				
-				<option value="file10">go-skeleton/src/application/pong/pong_command.go (50.0%)</option>
+				<option value="file10">go-skeleton/src/application/pong/pong.go (100.0%)</option>
 				
-				<option value="file11">go-skeleton/src/infrastructure/bus/command/commandbus.go (100.0%)</option>
+				<option value="file11">go-skeleton/src/application/pong/pong_command.go (50.0%)</option>
 				
-				<option value="file12">go-skeleton/src/infrastructure/bus/query/querybus.go (100.0%)</option>
+				<option value="file12">go-skeleton/src/infrastructure/bus/command/commandbus.go (100.0%)</option>
 				
-				<option value="file13">go-skeleton/src/infrastructure/http/get/ping.go (0.0%)</option>
+				<option value="file13">go-skeleton/src/infrastructure/bus/query/querybus.go (100.0%)</option>
 				
-				<option value="file14">go-skeleton/src/infrastructure/http/post/pong.go (0.0%)</option>
+				<option value="file14">go-skeleton/src/infrastructure/http/get/ping.go (0.0%)</option>
+				
+				<option value="file15">go-skeleton/src/infrastructure/http/post/pong.go (0.0%)</option>
 				
 				</select>
 			</div>
@@ -106,7 +108,7 @@
 		</div>
 		<div id="content">
 		
-		<pre class="file" id="file0" style="display: none">package app
+		<pre class="file" id="file0" style="display: none">package engine
 
 import (
         "fmt"
@@ -115,15 +117,18 @@ import (
         "strconv"
 
         "github.com/joho/godotenv"
-        "github.com/prometheus/client_golang/prometheus"
 
         "go-skeleton/cmd/http"
         "go-skeleton/infrastructure/metrics"
 )
 
+type EngineInterface interface {
+        NewEngine() Engine
+}
+
 type Engine struct {
-        Server  http.Server
-        Metrics metrics.Metrics
+        Server  http.HttpServer
+        Metrics metrics.MetricsInterface
 }
 
 const defaultEnv = "etc/dev/env"
@@ -131,31 +136,201 @@ const httpServerAddress = "HTTP_SERVER_ADDRESS"
 const httpServerPort = "HTTP_SERVER_PORT"
 const defaultPrometheusUrl = "DEFAULT_PROMETHEUS_URL"
 
-func NewEngine() Engine <span class="cov0" title="0">{
-        err := godotenv.Load(defaultEnv)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatal("Error loading .env file")
-        }</span>
+func NewEngine(server http.HttpServer, metrics metrics.MetricsInterface) Engine <span class="cov8" title="1">{
+        return Engine{
+                server,
+                metrics,
+        }
+}</span>
 
-        <span class="cov0" title="0">port, _ := strconv.Atoi(os.Getenv(httpServerPort))
+func (e *Engine) BuildEngine() http.Config <span class="cov8" title="1">{
+        pwd, _ := os.Getwd()
+        path := fmt.Sprintf("%s/../../%s", pwd, defaultEnv)
+        err := godotenv.Load(path)
+        if err != nil </span><span class="cov0" title="0">{
+                err := godotenv.Load(defaultEnv)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatal("Error loading .env file")
+                }</span>
+        }
+
+        <span class="cov8" title="1">port, _ := strconv.Atoi(os.Getenv(httpServerPort))
         var cfg = http.Config{
                 DefaultPrometheusMetric: os.Getenv(defaultPrometheusUrl),
                 AddressPort:             port,
                 AddressIp:               os.Getenv(httpServerAddress),
         }
-
-        mtrcs := metricsRegister()
-        srv := http.NewHttpServer(cfg, mtrcs)
-
-        srv.GinEngine.Run(fmt.Sprintf(": %d", cfg.AddressPort))
-
-        return Engine{
-                Server:  srv,
-                Metrics: mtrcs,
-        }</span>
+        e.Server.BuildHttpServer(e.Metrics)
+        return cfg</span>
 }
 
-func metricsRegister() metrics.Metrics <span class="cov0" title="0">{
+func (e *Engine) RunEngine(port int) <span class="cov0" title="0">{
+        e.Server.Gin().Run(fmt.Sprintf(": %d", port))
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: server.go
+
+// Package http is a generated GoMock package.
+package http
+
+import (
+        metrics "go-skeleton/infrastructure/metrics"
+        reflect "reflect"
+
+        gin "github.com/gin-gonic/gin"
+        gomock "github.com/golang/mock/gomock"
+)
+
+// MockHttpServer is a mock of HttpServer interface.
+type MockHttpServer struct {
+        ctrl     *gomock.Controller
+        recorder *MockHttpServerMockRecorder
+}
+
+// MockHttpServerMockRecorder is the mock recorder for MockHttpServer.
+type MockHttpServerMockRecorder struct {
+        mock *MockHttpServer
+}
+
+// NewMockHttpServer creates a new mock instance.
+func NewMockHttpServer(ctrl *gomock.Controller) *MockHttpServer <span class="cov8" title="1">{
+        mock := &amp;MockHttpServer{ctrl: ctrl}
+        mock.recorder = &amp;MockHttpServerMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockHttpServer) EXPECT() *MockHttpServerMockRecorder <span class="cov8" title="1">{
+        return m.recorder
+}</span>
+
+// BuildHttpServer mocks base method.
+func (m *MockHttpServer) BuildHttpServer(metrics metrics.MetricsInterface) <span class="cov8" title="1">{
+        m.ctrl.T.Helper()
+        m.ctrl.Call(m, "BuildHttpServer", metrics)
+}</span>
+
+// BuildHttpServer indicates an expected call of BuildHttpServer.
+func (mr *MockHttpServerMockRecorder) BuildHttpServer(metrics interface{}) *gomock.Call <span class="cov8" title="1">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildHttpServer", reflect.TypeOf((*MockHttpServer)(nil).BuildHttpServer), metrics)
+}</span>
+
+// Gin mocks base method.
+func (m *MockHttpServer) Gin() *gin.Engine <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Gin")
+        ret0, _ := ret[0].(*gin.Engine)
+        return ret0
+}</span>
+
+// Gin indicates an expected call of Gin.
+func (mr *MockHttpServerMockRecorder) Gin() *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Gin", reflect.TypeOf((*MockHttpServer)(nil).Gin))
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package http
+
+import (
+        "github.com/gin-gonic/gin"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
+
+        "go-skeleton/infrastructure/metrics"
+        "go-skeleton/src/application/ping"
+        "go-skeleton/src/application/pong"
+        "go-skeleton/src/infrastructure/bus/command"
+        "go-skeleton/src/infrastructure/bus/query"
+        "go-skeleton/src/infrastructure/http/get"
+        "go-skeleton/src/infrastructure/http/post"
+)
+
+const DEFAULT_PING_URL = "/ping"
+const DEFAULT_PONG_URL = "/pong"
+const DEFAULT_PROMETHEUS_METRICS = "/metrics"
+
+type Routes struct {
+        Gin     *gin.Engine
+        Metrics metrics.MetricsInterface
+}
+
+func (g *Routes) BindRoutes() <span class="cov10" title="2">{
+        g.Gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
+        g.Gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
+        g.Gin.GET(DEFAULT_PROMETHEUS_METRICS, prometheusHandler())
+}</span>
+
+func (g *Routes) buildPingHandlersMapping(c *gin.Context) <span class="cov0" title="0">{
+        pingQueryHandler := ping.NewPingApplication(c, g.Metrics)
+        qbManager := query.NewQueryBus()
+        qbManager.RegisterHandler(ping.PingQuery{}, pingQueryHandler)
+        pingController := get.NewPingHandler(g.Metrics)
+        pingController.Ping(c, qbManager)
+}</span>
+
+func (g *Routes) buildPongHandlersMapping(c *gin.Context) <span class="cov0" title="0">{
+        pongCommandHandler := pong.NewPongApplication(c, g.Metrics)
+        cbManager := command.NewCommandBus()
+        cbManager.RegisterHandler(pong.PongCommand{}, pongCommandHandler)
+        pongController := post.NewPongHandler(g.Metrics)
+        pongController.Pong(c, cbManager)
+}</span>
+
+func prometheusHandler() gin.HandlerFunc <span class="cov10" title="2">{
+        h := promhttp.Handler()
+
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                h.ServeHTTP(c.Writer, c.Request)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
+package http
+
+import (
+        "github.com/gin-gonic/gin"
+        "github.com/prometheus/client_golang/prometheus"
+
+        "go-skeleton/infrastructure/metrics"
+)
+
+type HttpServer interface {
+        BuildHttpServer(metrics metrics.MetricsInterface)
+        Gin() *gin.Engine
+}
+
+type Config struct {
+        DefaultPrometheusMetric string
+        AddressPort             int
+        AddressIp               string
+}
+
+type Server struct {
+        GinEngine *gin.Engine
+        Metrics   metrics.MetricsInterface
+}
+
+func NewHttpServer() *Server <span class="cov8" title="1">{
+        return &amp;Server{
+                GinEngine: gin.New(),
+                Metrics:   metricsRegister(),
+        }
+}</span>
+
+func (srv *Server) BuildHttpServer(metrics metrics.MetricsInterface) <span class="cov8" title="1">{
+        routes := Routes{Gin: srv.GinEngine, Metrics: metrics}
+        routes.BindRoutes()
+}</span>
+
+func (srv *Server) Gin() *gin.Engine <span class="cov8" title="1">{
+        return srv.GinEngine
+}</span>
+
+func metricsRegister() metrics.Metrics <span class="cov8" title="1">{
         var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
                 Name: "http_response_time_seconds",
                 Help: "Duration of HTTP requests.",
@@ -181,90 +356,7 @@ func metricsRegister() metrics.Metrics <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file1" style="display: none">package http
-
-import (
-        "github.com/gin-gonic/gin"
-        "github.com/prometheus/client_golang/prometheus/promhttp"
-
-        "go-skeleton/infrastructure/metrics"
-        "go-skeleton/src/application/ping"
-        "go-skeleton/src/application/pong"
-        "go-skeleton/src/infrastructure/bus/command"
-        "go-skeleton/src/infrastructure/bus/query"
-        "go-skeleton/src/infrastructure/http/get"
-        "go-skeleton/src/infrastructure/http/post"
-)
-
-const DEFAULT_PING_URL = "/ping"
-const DEFAULT_PONG_URL = "/pong"
-
-type Routes struct {
-        gin     *gin.Engine
-        Metrics metrics.Metrics
-}
-
-func (g *Routes) BindRoutes(cfg Config) <span class="cov0" title="0">{
-        g.gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
-        g.gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
-        g.gin.GET("/"+cfg.DefaultPrometheusMetric, prometheusHandler())
-}</span>
-
-func (g *Routes) buildPingHandlersMapping(c *gin.Context) <span class="cov0" title="0">{
-        pingQueryHandler := ping.NewPingApplication(c, g.Metrics)
-        qbManager := query.NewQueryBus()
-        qbManager.RegisterHandler(ping.PingQuery{}, pingQueryHandler)
-        pingController := get.NewPingHandler(g.Metrics)
-        pingController.Ping(c, qbManager)
-}</span>
-
-func (g *Routes) buildPongHandlersMapping(c *gin.Context) <span class="cov0" title="0">{
-        pongCommandHandler := pong.NewPongApplication(c, g.Metrics)
-        cbManager := command.NewCommandBus()
-        cbManager.RegisterHandler(pong.PongCommand{}, pongCommandHandler)
-        pongController := post.NewPongHandler(g.Metrics)
-        pongController.Pong(c, cbManager)
-}</span>
-
-func prometheusHandler() gin.HandlerFunc <span class="cov0" title="0">{
-        h := promhttp.Handler()
-
-        return func(c *gin.Context) </span><span class="cov0" title="0">{
-                h.ServeHTTP(c.Writer, c.Request)
-        }</span>
-}
-</pre>
-		
-		<pre class="file" id="file2" style="display: none">package http
-
-import (
-        "github.com/gin-gonic/gin"
-
-        "go-skeleton/infrastructure/metrics"
-)
-
-type Config struct {
-        DefaultPrometheusMetric string
-        AddressPort             int
-        AddressIp               string
-}
-
-type Server struct {
-        GinEngine *gin.Engine
-}
-
-func NewHttpServer(cfg Config, metrics metrics.Metrics) Server <span class="cov0" title="0">{
-        r := gin.New()
-        routes := Routes{gin: r, Metrics: metrics}
-        routes.BindRoutes(cfg)
-
-        return Server{
-                GinEngine: r,
-        }
-}</span>
-</pre>
-		
-		<pre class="file" id="file3" style="display: none">//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
+		<pre class="file" id="file4" style="display: none">//go:generate mockgen -source=$GOFILE -destination=mock_$GOFILE -package=$GOPACKAGE
 package metrics
 
 import (
@@ -286,7 +378,7 @@ type Metrics struct {
         ResponseStatus   *prometheus.CounterVec
 }
 
-func NewMetrics(HttpResponseTime *prometheus.HistogramVec, TotalRequest *prometheus.CounterVec, ResponseStatus *prometheus.CounterVec) Metrics <span class="cov0" title="0">{
+func NewMetrics(HttpResponseTime *prometheus.HistogramVec, TotalRequest *prometheus.CounterVec, ResponseStatus *prometheus.CounterVec) Metrics <span class="cov10" title="3">{
         return Metrics{
                 HttpResponseTime,
                 TotalRequest,
@@ -294,24 +386,24 @@ func NewMetrics(HttpResponseTime *prometheus.HistogramVec, TotalRequest *prometh
         }
 }</span>
 
-func (m Metrics) AddToResponseTime(method string) <span class="cov0" title="0">{
+func (m Metrics) AddToResponseTime(method string) <span class="cov1" title="1">{
         m.HttpResponseTime.WithLabelValues(method)
 }</span>
 
-func (m Metrics) NewTimer(method string) *prometheus.Timer <span class="cov0" title="0">{
+func (m Metrics) NewTimer(method string) *prometheus.Timer <span class="cov1" title="1">{
         return prometheus.NewTimer(m.HttpResponseTime.WithLabelValues(method))
 }</span>
 
-func (m Metrics) IncrementTotalRequests(method string) <span class="cov0" title="0">{
+func (m Metrics) IncrementTotalRequests(method string) <span class="cov1" title="1">{
         m.TotalRequest.WithLabelValues(method).Inc()
 }</span>
 
-func (m Metrics) IncrementResponseStatus(status int) <span class="cov0" title="0">{
+func (m Metrics) IncrementResponseStatus(status int) <span class="cov1" title="1">{
         m.ResponseStatus.WithLabelValues(strconv.Itoa(status)).Inc()
 }</span>
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+		<pre class="file" id="file5" style="display: none">// Code generated by MockGen. DO NOT EDIT.
 // Source: metrics.go
 
 // Package metrics is a generated GoMock package.
@@ -336,7 +428,7 @@ type MockMetricsInterfaceMockRecorder struct {
 }
 
 // NewMockMetricsInterface creates a new mock instance.
-func NewMockMetricsInterface(ctrl *gomock.Controller) *MockMetricsInterface <span class="cov7" title="4">{
+func NewMockMetricsInterface(ctrl *gomock.Controller) *MockMetricsInterface <span class="cov7" title="5">{
         mock := &amp;MockMetricsInterface{ctrl: ctrl}
         mock.recorder = &amp;MockMetricsInterfaceMockRecorder{mock}
         return mock
@@ -398,16 +490,22 @@ func (mr *MockMetricsInterfaceMockRecorder) NewTimer(method interface{}) *gomock
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package main
+		<pre class="file" id="file6" style="display: none">package main
 
-import "go-skeleton/cmd/app"
+import (
+        "go-skeleton/cmd/engine"
+        "go-skeleton/cmd/http"
+)
 
 func main() <span class="cov0" title="0">{
-        app.NewEngine()
+        srv := http.NewHttpServer()
+        eng := engine.NewEngine(srv, srv.Metrics)
+        cfg := eng.BuildEngine()
+        eng.RunEngine(cfg.AddressPort)
 }</span>
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package ping
+		<pre class="file" id="file7" style="display: none">package ping
 
 import (
         "github.com/gin-gonic/gin"
@@ -438,7 +536,7 @@ func NewPingApplication(context *gin.Context, metrics metrics.MetricsInterface) 
 }</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package ping
+		<pre class="file" id="file8" style="display: none">package ping
 
 import (
         "github.com/gin-gonic/gin"
@@ -448,7 +546,7 @@ import (
 
 type PingQuery struct {
         Context *gin.Context
-        Metrics metrics.Metrics
+        Metrics metrics.MetricsInterface
 }
 
 func (p PingQuery) PingQuery() {<span class="cov0" title="0">}</span>
@@ -457,7 +555,7 @@ func (p PingQuery) QueryID() string <span class="cov10" title="5">{
         return "gopher_PingQuery"
 }</span>
 
-func NewQuery(c *gin.Context, metrics metrics.Metrics) PingQuery <span class="cov0" title="0">{
+func NewQuery(c *gin.Context, metrics metrics.MetricsInterface) PingQuery <span class="cov0" title="0">{
         return PingQuery{
                 Context: c,
                 Metrics: metrics,
@@ -465,7 +563,7 @@ func NewQuery(c *gin.Context, metrics metrics.Metrics) PingQuery <span class="co
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package ping
+		<pre class="file" id="file9" style="display: none">package ping
 
 type PingQueryResponse struct {
         Resp string
@@ -480,7 +578,7 @@ func NewPingResponse(queryResponse string) PingQueryResponse <span class="cov8" 
 }</span>
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package pong
+		<pre class="file" id="file10" style="display: none">package pong
 
 import (
         "github.com/gin-gonic/gin"
@@ -511,7 +609,7 @@ func NewPongApplication(context *gin.Context, metrics metrics.MetricsInterface) 
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package pong
+		<pre class="file" id="file11" style="display: none">package pong
 
 import (
         "github.com/gin-gonic/gin"
@@ -521,7 +619,7 @@ import (
 
 type PongCommand struct {
         Context *gin.Context
-        Metrics metrics.Metrics
+        Metrics metrics.MetricsInterface
 }
 
 func (p PongCommand) PingCommand() {<span class="cov0" title="0">}</span>
@@ -530,7 +628,7 @@ func (p PongCommand) CommandID() string <span class="cov10" title="5">{
         return "gopher_PongCommand"
 }</span>
 
-func NewCommand(c *gin.Context, metrics metrics.Metrics) PongCommand <span class="cov0" title="0">{
+func NewCommand(c *gin.Context, metrics metrics.MetricsInterface) PongCommand <span class="cov0" title="0">{
         return PongCommand{
                 Context: c,
                 Metrics: metrics,
@@ -538,7 +636,7 @@ func NewCommand(c *gin.Context, metrics metrics.Metrics) PongCommand <span class
 }</span>
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package command
+		<pre class="file" id="file12" style="display: none">package command
 
 import (
         "fmt"
@@ -583,7 +681,7 @@ func (cb CommandBus) Exec(c Command) error <span class="cov6" title="2">{
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package query
+		<pre class="file" id="file13" style="display: none">package query
 
 import "fmt"
 
@@ -631,7 +729,7 @@ func (cb QueryBus) Exec(c Query) (QueryResponse, error) <span class="cov6" title
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package get
+		<pre class="file" id="file14" style="display: none">package get
 
 import (
         "time"
@@ -644,7 +742,7 @@ import (
 )
 
 type PingHandler struct {
-        metrics metrics.Metrics
+        metrics metrics.MetricsInterface
 }
 
 func (h PingHandler) Ping(c *gin.Context, queryBus query.QueryBus) <span class="cov0" title="0">{
@@ -654,12 +752,12 @@ func (h PingHandler) Ping(c *gin.Context, queryBus query.QueryBus) <span class="
         c.JSON(200, rsp)
 }</span>
 
-func NewPingHandler(metrics metrics.Metrics) PingHandler <span class="cov0" title="0">{
+func NewPingHandler(metrics metrics.MetricsInterface) PingHandler <span class="cov0" title="0">{
         return PingHandler{metrics: metrics}
 }</span>
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package post
+		<pre class="file" id="file15" style="display: none">package post
 
 import (
         "time"
@@ -672,7 +770,7 @@ import (
 )
 
 type PongHandler struct {
-        metrics metrics.Metrics
+        metrics metrics.MetricsInterface
 }
 
 func (h PongHandler) Pong(c *gin.Context, commandbus command.CommandBus) <span class="cov0" title="0">{
@@ -682,7 +780,7 @@ func (h PongHandler) Pong(c *gin.Context, commandbus command.CommandBus) <span c
         c.JSON(200, "{'ok'}")
 }</span>
 
-func NewPongHandler(metrics metrics.Metrics) PongHandler <span class="cov0" title="0">{
+func NewPongHandler(metrics metrics.MetricsInterface) PongHandler <span class="cov0" title="0">{
         return PongHandler{metrics: metrics}
 }</span>
 </pre>

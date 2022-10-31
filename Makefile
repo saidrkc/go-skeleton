@@ -8,25 +8,29 @@ go-mocks: ## Generate mocks for testing
 	go generate -run="mockgen" ./...
 	@echo "... done"
 
-up: ## Create docker's
+bash:
+	docker exec -ti go-skeleton-golang bash
+
+up: ## Create docker containers
 	docker-compose up -d
 
-
-go-test: go-mocks ##Test
+go-test: go-install-vendor go-mocks ##Test
 	go test -v --tags=unit,e2e ./...
 
-go-test-coverage:
+go-test-coverage: go-install-vendor go-mocks
 	go test -v --tags=unit ./... -covermode=count -coverpkg=./... -coverprofile infrastructure/coverage/coverage.out
 	go tool cover -html infrastructure/coverage/coverage.out -o infrastructure/coverage/coverage.html
 
 go-install-vendor: ## Install dependencies
 	go mod vendor
 
-
 go-update-vendor: ## Updates dependencies
 	go mod tidy && go mod vendor
 
 go-test-unit:
 	go test -v -tags=unit ./...
+
+go-test-e2e:
+	go test -v -tags=e2e ./...
 
 

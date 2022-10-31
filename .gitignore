@@ -18,6 +18,7 @@ mock_*.go
 
 # Output of the go coverage tool
 *.out
+*.html
 *.tmp
 report-*.json
 

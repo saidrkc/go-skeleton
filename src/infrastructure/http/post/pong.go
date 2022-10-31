@@ -18,7 +18,7 @@ func (h PongHandler) Pong(c *gin.Context, commandbus command.CommandBus) {
 	time.Sleep(time.Second * 1)
 	pongCommand := pong.NewCommand(c, h.metrics)
 	commandbus.Exec(pongCommand)
-	c.JSON(200, "{'ok'}")
+	c.JSON(200, "{}")
 }
 
 func NewPongHandler(metrics metrics.MetricsInterface) PongHandler {

@@ -13,7 +13,7 @@ up: ## Create docker's
 
 
 go-test: go-mocks ##Test
-	go test -v --tags=unit ./...
+	go test -v --tags=unit,e2e ./...
 
 go-test-coverage:
 	go test -v --tags=unit ./... -covermode=count -coverpkg=./... -coverprofile infrastructure/coverage/coverage.out

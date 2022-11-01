@@ -36,12 +36,24 @@ func (u *UserRepository) AddRelativeScoreToUser(score domain.UserScore) {
 	scoreUser, slicePos := u.FindUserScore(score)
 	if score.UserId != 0 && slicePos >= 0 {
 		scoreUser.Total = scoreUser.Total + score.Score
+		if scoreUser.Total < 0 {
+			scoreUser.Total = 0
+		}
 		u.UpdateScoreToUsersInMemory(UserScoreInMemory{UserId: score.UserId, Total: scoreUser.Total}, slicePos)
 		return
 	}
+
+	total := func() int {
+		total := scoreUser.Total + score.Score
+		if total < 0 {
+			return 0
+		}
+		return total
+	}
+
 	sc := UserScoreInMemory{
 		UserId: score.UserId,
-		Total:  scoreUser.Total + score.Score,
+		Total:  total(),
 	}
 
 	u.AddScoreToUsersInMemory(sc)

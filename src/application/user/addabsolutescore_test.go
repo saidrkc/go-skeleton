@@ -1,16 +1,19 @@
-package http_test
+package user_test
 
 import (
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/require"
 
-	"go-skeleton/cmd/http"
 	"go-skeleton/infrastructure/metrics"
+	"go-skeleton/src/application/user"
+	"go-skeleton/src/infrastructure/memory"
 )
 
-func TestRoutes_BindRoutes(t *testing.T) {
+func TestAbsoluteScore_Handle(t *testing.T) {
 	var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "http_response_time_seconds",
 		Help: "Duration of HTTP requests.",
@@ -30,9 +33,14 @@ func TestRoutes_BindRoutes(t *testing.T) {
 		[]string{"status"},
 	)
 	mtrcs := metrics.NewMetrics(httpDuration, totalRequests, responseStatus)
-	t.Run("Binding Routes ", func(t *testing.T) {
-		routes := http.Routes{Metrics: mtrcs, Gin: gin.Default()}
-		routes.InitRepository()
-		routes.BindRoutes()
+	t.Run("Add absolute score to User ranking ", func(t *testing.T) {
+		r := require.New(t)
+		usersRepository := memory.NewUserRepository()
+		usersRepository.FillUserScore(1)
+		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+		absolutescoreCommand := user.NewAbsoluteScoreCommand(ctx, mtrcs)
+		absoluteScoreApplication := user.NewAbsoluteScoreApplication(ctx, mtrcs, usersRepository)
+		err := absoluteScoreApplication.Handle(absolutescoreCommand)
+		r.NoError(err)
 	})
 }

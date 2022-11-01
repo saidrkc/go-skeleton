@@ -13,7 +13,7 @@ import (
 	"go-skeleton/src/infrastructure/http/get"
 	"go-skeleton/src/infrastructure/http/post"
 	user2 "go-skeleton/src/infrastructure/http/post/user"
-	"go-skeleton/src/infrastructure/inmemory"
+	"go-skeleton/src/infrastructure/memory"
 )
 
 const DEFAULT_ABSOLUTE_SCORE = "/score"
@@ -21,9 +21,12 @@ const DEFAULT_PING_URL = "/ping"
 const DEFAULT_PONG_URL = "/pong"
 const DEFAULT_PROMETHEUS_METRICS = "/metrics"
 
+var singleton *memory.UserRepository
+
 type Routes struct {
-	Gin     *gin.Engine
-	Metrics metrics.MetricsInterface
+	Gin            *gin.Engine
+	Metrics        metrics.MetricsInterface
+	UserRepository memory.UserRepository
 }
 
 func (g *Routes) BindRoutes() {
@@ -50,8 +53,7 @@ func (g *Routes) buildPongHandlersMapping(c *gin.Context) {
 }
 
 func (g *Routes) buildAbsoluteScoreHandlersMapping(c *gin.Context) {
-	userRepository := inmemory.NewUserRepository()
-	absoluteScoreHandler := user.NewAbsoluteScoreApplication(c, g.Metrics, userRepository)
+	absoluteScoreHandler := user.NewAbsoluteScoreApplication(c, g.Metrics, UserRepository())
 	cbManager := command.NewCommandBus()
 	cbManager.RegisterHandler(user.AbsoluteScoreCommand{}, absoluteScoreHandler)
 	absoluteController := user2.NewAbsoluteScoreHandler(g.Metrics)
@@ -64,4 +66,13 @@ func prometheusHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
 	}
+}
+
+func UserRepository() *memory.UserRepository {
+	return singleton
+}
+
+func (g *Routes) InitRepository() {
+	userRepository := memory.NewUserRepository()
+	singleton = &userRepository
 }

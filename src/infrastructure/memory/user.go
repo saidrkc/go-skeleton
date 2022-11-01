@@ -1,20 +1,16 @@
-package inmemory
+package memory
 
 import (
 	"go-skeleton/src/domain"
 )
 
-type UsersScoreInMemory struct {
-	UsersScore []UserScoreInMemory
-}
-
 type UserScoreInMemory struct {
 	UserId int
-	Total  float32
+	Total  int
 }
 
 type UserRepository struct {
-	UsersScoreMemory UsersScoreInMemory
+	UsersScore []*UserScoreInMemory
 }
 
 func (u *UserRepository) AddAbsoluteScoreToUser(score domain.UserScore) {
@@ -47,17 +43,16 @@ func (u *UserRepository) AddRelativeScoreToUser(score domain.UserScore) {
 }
 
 func (u *UserRepository) AddScoreToUsersInMemory(user UserScoreInMemory) {
-	u.UsersScoreMemory.UsersScore = append(u.UsersScoreMemory.UsersScore, user)
+	u.UsersScore = append(u.UsersScore, &user)
 }
 
-func (u *UserRepository) FindUserScore(score domain.UserScore) UserScoreInMemory {
-	for _, v := range u.UsersScoreMemory.UsersScore {
+func (u *UserRepository) FindUserScore(score domain.UserScore) *UserScoreInMemory {
+	for _, v := range u.UsersScore {
 		if v.UserId == score.UserId {
 			return v
 		}
 	}
-
-	return UserScoreInMemory{}
+	return &UserScoreInMemory{}
 }
 
 func (u *UserRepository) FillUserScore(numberOfUsers int) {
@@ -68,5 +63,7 @@ func (u *UserRepository) FillUserScore(numberOfUsers int) {
 }
 
 func NewUserRepository() UserRepository {
-	return UserRepository{}
+	return UserRepository{
+		UsersScore: make([]*UserScoreInMemory, 0),
+	}
 }

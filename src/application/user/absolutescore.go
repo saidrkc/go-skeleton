@@ -1,25 +1,25 @@
 package user
 
 import (
-	"net/http"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 
 	"go-skeleton/infrastructure/metrics"
 	"go-skeleton/src/domain"
 	"go-skeleton/src/infrastructure/bus/command"
-	"go-skeleton/src/infrastructure/inmemory"
 )
 
 type AbsoluteScoreRequest struct {
-	User  int     `json:"user" binding:"required"`
-	Total float32 `json:"total" binding:"required"`
+	User  int `json:"user" binding:"required"`
+	Total int `json:"total"`
+	Score int `json:"score"`
 }
 
 type AbsoluteScore struct {
 	Context   *gin.Context
 	Metrics   metrics.MetricsInterface
-	UserScore inmemory.UserRepository
+	UserScore domain.UserRepositoryInterface
 }
 
 func (p AbsoluteScore) Handle(command command.Command) error {
@@ -30,12 +30,26 @@ func (p AbsoluteScore) Handle(command command.Command) error {
 
 	var expectedRequest AbsoluteScoreRequest
 	if err := p.Context.ShouldBindJSON(&expectedRequest); err != nil {
-		p.Context.AbortWithStatus(http.StatusBadRequest)
+		return errors.New("bad Request, parameters are not well")
 	}
+
+	if expectedRequest.Score != 0 && expectedRequest.Total != 0 {
+		return errors.New("if wants to change total with score, total must be 0 and vice-versa")
+	}
+
+	if expectedRequest.Score != 0 {
+		userScore := domain.UserScore{
+			UserId: expectedRequest.User,
+			Score:  expectedRequest.Score,
+		}
+
+		p.UserScore.AddRelativeScoreToUser(userScore)
+		return nil
+	}
+
 	userScore := domain.UserScore{
 		UserId: expectedRequest.User,
 		Total:  expectedRequest.Total,
-		Score:  0,
 	}
 
 	p.UserScore.AddAbsoluteScoreToUser(userScore)
@@ -43,7 +57,7 @@ func (p AbsoluteScore) Handle(command command.Command) error {
 	return nil
 }
 
-func NewAbsoluteScoreApplication(context *gin.Context, metrics metrics.MetricsInterface, userScore inmemory.UserRepository) AbsoluteScore {
+func NewAbsoluteScoreApplication(context *gin.Context, metrics metrics.MetricsInterface, userScore domain.UserRepositoryInterface) AbsoluteScore {
 	return AbsoluteScore{
 		Context:   context,
 		Metrics:   metrics,

@@ -33,6 +33,7 @@ func NewHttpServer() *Server {
 
 func (srv *Server) BuildHttpServer(metrics metrics.MetricsInterface) {
 	routes := Routes{Gin: srv.GinEngine, Metrics: metrics}
+	routes.InitRepository()
 	routes.BindRoutes()
 }
 

@@ -14,9 +14,10 @@ type UserRepository struct {
 }
 
 func (u *UserRepository) AddAbsoluteScoreToUser(score domain.UserScore) {
-	scoreUser := u.FindUserScore(score)
+	scoreUser, slicePos := u.FindUserScore(score)
 	if scoreUser.UserId != 0 {
-		scoreUser.Total = scoreUser.Total + score.Total
+		scoreUser.Total = score.Total
+		u.UpdateScoreToUsersInMemory(UserScoreInMemory{UserId: score.UserId, Total: scoreUser.Total}, slicePos)
 		return
 	}
 
@@ -29,30 +30,35 @@ func (u *UserRepository) AddAbsoluteScoreToUser(score domain.UserScore) {
 }
 
 func (u *UserRepository) AddRelativeScoreToUser(score domain.UserScore) {
-	scoreUser := u.FindUserScore(score)
-	if score.UserId != 0 {
+	scoreUser, slicePos := u.FindUserScore(score)
+	if score.UserId != 0 && slicePos >= 0 {
 		scoreUser.Total = scoreUser.Total + score.Score
+		u.UpdateScoreToUsersInMemory(UserScoreInMemory{UserId: score.UserId, Total: scoreUser.Total}, slicePos)
+		return
 	}
-
 	sc := UserScoreInMemory{
 		UserId: score.UserId,
-		Total:  score.Total,
+		Total:  scoreUser.Total + score.Score,
 	}
 
 	u.AddScoreToUsersInMemory(sc)
+}
+
+func (u *UserRepository) UpdateScoreToUsersInMemory(user UserScoreInMemory, slicePos int) {
+	u.UsersScore[slicePos] = &user
 }
 
 func (u *UserRepository) AddScoreToUsersInMemory(user UserScoreInMemory) {
 	u.UsersScore = append(u.UsersScore, &user)
 }
 
-func (u *UserRepository) FindUserScore(score domain.UserScore) *UserScoreInMemory {
-	for _, v := range u.UsersScore {
+func (u *UserRepository) FindUserScore(score domain.UserScore) (*UserScoreInMemory, int) {
+	for k, v := range u.UsersScore {
 		if v.UserId == score.UserId {
-			return v
+			return v, k
 		}
 	}
-	return &UserScoreInMemory{}
+	return &UserScoreInMemory{}, -1
 }
 
 func (u *UserRepository) FillUserScore(numberOfUsers int) {

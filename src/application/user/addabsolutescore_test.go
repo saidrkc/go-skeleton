@@ -10,7 +10,6 @@ import (
 
 	"go-skeleton/infrastructure/metrics"
 	"go-skeleton/src/application/user"
-	"go-skeleton/src/infrastructure/memory"
 )
 
 func TestAbsoluteScore_Handle(t *testing.T) {
@@ -35,8 +34,6 @@ func TestAbsoluteScore_Handle(t *testing.T) {
 	mtrcs := metrics.NewMetrics(httpDuration, totalRequests, responseStatus)
 	t.Run("Add absolute score to User ranking ", func(t *testing.T) {
 		r := require.New(t)
-		usersRepository := memory.NewUserRepository()
-		usersRepository.FillUserScore(1)
 		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 		absolutescoreCommand := user.NewAbsoluteScoreCommand(ctx, mtrcs)
 		absoluteScoreApplication := user.NewAbsoluteScoreApplication(ctx, mtrcs, usersRepository)

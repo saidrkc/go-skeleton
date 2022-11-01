@@ -1,6 +1,8 @@
 package memory
 
 import (
+	"sync"
+
 	"go-skeleton/src/domain"
 )
 
@@ -11,6 +13,7 @@ type UserScoreInMemory struct {
 
 type UserRepository struct {
 	UsersScore []*UserScoreInMemory
+	Mutex      sync.Mutex
 }
 
 func (u *UserRepository) AddAbsoluteScoreToUser(score domain.UserScore) {
@@ -45,11 +48,15 @@ func (u *UserRepository) AddRelativeScoreToUser(score domain.UserScore) {
 }
 
 func (u *UserRepository) UpdateScoreToUsersInMemory(user UserScoreInMemory, slicePos int) {
+	u.Mutex.Lock()
 	u.UsersScore[slicePos] = &user
+	u.Mutex.Unlock()
 }
 
 func (u *UserRepository) AddScoreToUsersInMemory(user UserScoreInMemory) {
+	u.Mutex.Lock()
 	u.UsersScore = append(u.UsersScore, &user)
+	u.Mutex.Unlock()
 }
 
 func (u *UserRepository) FindUserScore(score domain.UserScore) (*UserScoreInMemory, int) {

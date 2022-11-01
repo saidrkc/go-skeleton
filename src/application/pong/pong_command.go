@@ -11,8 +11,6 @@ type PongCommand struct {
 	Metrics metrics.MetricsInterface
 }
 
-func (p PongCommand) PingCommand() {}
-
 func (p PongCommand) CommandID() string {
 	return "gopher_PongCommand"
 }

@@ -6,7 +6,6 @@ import (
 
 type Command interface {
 	CommandID() string
-	PingCommand()
 }
 
 type CommandHandler interface {

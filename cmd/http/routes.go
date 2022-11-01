@@ -17,6 +17,7 @@ import (
 	"go-skeleton/src/infrastructure/memory"
 )
 
+const DEFAULT_RELATIVE_RANKING = "/relative"
 const DEFAULT_ABSOLUTE_SCORE = "/score"
 const DEFAULT_ABSOLUTE_RANKING = "/ranking"
 const DEFAULT_PING_URL = "/ping"
@@ -32,6 +33,7 @@ type Routes struct {
 }
 
 func (g *Routes) BindRoutes() {
+	g.Gin.GET(DEFAULT_RELATIVE_RANKING, g.buildRelativeRankingHandlersMapping)
 	g.Gin.POST(DEFAULT_ABSOLUTE_SCORE, g.buildAbsoluteScoreHandlersMapping)
 	g.Gin.GET(DEFAULT_ABSOLUTE_RANKING, g.buildAbsoluteRankingHandlersMapping)
 
@@ -71,6 +73,14 @@ func (g *Routes) buildAbsoluteRankingHandlersMapping(c *gin.Context) {
 	qbManager.RegisterHandler(user.AbsoluteRankingQuery{}, absoluteRankingQueryHandler)
 	absoluteRankingController := user3.NewAbsoluteRankingHandler(g.Metrics)
 	absoluteRankingController.AbsoluteRanking(c, qbManager)
+}
+
+func (g *Routes) buildRelativeRankingHandlersMapping(c *gin.Context) {
+	relativeRankingQueryHandler := user.NewRelativeRanking(c, g.Metrics, UserRepository())
+	qbManager := query.NewQueryBus()
+	qbManager.RegisterHandler(user.RelativeRankingQuery{}, relativeRankingQueryHandler)
+	relativeRankingController := user3.NewRelativeRankingHandler(g.Metrics)
+	relativeRankingController.RelativeRanking(c, qbManager)
 }
 
 func prometheusHandler() gin.HandlerFunc {

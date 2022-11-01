@@ -5,6 +5,7 @@ type UserRepositoryInterface interface {
 	AddAbsoluteScoreToUser(score UserScore)
 	AddRelativeScoreToUser(score UserScore)
 	AbsoluteRanking(ranking int) []UserScoreResponse
+	RelativeRanking(point int, around int) []UserScoreResponse
 }
 
 type UserScore struct {

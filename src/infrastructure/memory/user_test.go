@@ -75,4 +75,71 @@ func TestUserRepository_AddAbsoluteScoreToUser(t *testing.T) {
 		req.Equal(expected.UserId, score.UserId)
 		req.Equal(expected.Total, score.Total)
 	})
+
+	t.Run("Should return absolute ranking sorted by totals", func(t *testing.T) {
+		req := require.New(t)
+		usersScore := providerUsersScoreSort()
+		for _, v := range usersScore {
+			userRepository.AddAbsoluteScoreToUser(v)
+		}
+
+		expectedUserScoreSort := expectedUserScoreSort()
+		sortedUserScore := userRepository.AbsoluteRanking(5)
+		req.Equal(sortedUserScore, expectedUserScoreSort)
+	})
+
+	t.Run("Should return absolute ranking sorted by totals, but ranking relative top 1", func(t *testing.T) {
+		req := require.New(t)
+		usersScore := providerUsersScoreSort()
+		for _, v := range usersScore {
+			userRepository.AddAbsoluteScoreToUser(v)
+		}
+
+		expectedUserScoreSort := expectedUserScoreSortWithRanked()
+		sortedUserScore := userRepository.AbsoluteRanking(1)
+		req.Equal(sortedUserScore, expectedUserScoreSort)
+	})
+}
+
+func expectedUserScoreSortWithRanked() []domain.UserScoreResponse {
+	return []domain.UserScoreResponse{
+		{
+			UserId: 3,
+			Total:  21,
+		},
+	}
+}
+
+func expectedUserScoreSort() []domain.UserScoreResponse {
+	return []domain.UserScoreResponse{
+		{
+			UserId: 3,
+			Total:  21,
+		},
+		{
+			UserId: 2,
+			Total:  20,
+		},
+		{
+			UserId: 1,
+			Total:  3,
+		},
+	}
+}
+
+func providerUsersScoreSort() []domain.UserScore {
+	return []domain.UserScore{
+		{
+			UserId: 1,
+			Total:  3,
+		},
+		{
+			UserId: 2,
+			Total:  20,
+		},
+		{
+			UserId: 3,
+			Total:  21,
+		},
+	}
 }

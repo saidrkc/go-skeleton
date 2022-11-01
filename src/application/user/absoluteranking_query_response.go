@@ -10,7 +10,7 @@ type UserScoreResponse struct {
 }
 
 type AbsoluteRankingQueryResponse struct {
-	UsersScoreResponse
+	UsersScoreResponse `json:"user_score_response"`
 }
 
 func (p AbsoluteRankingQueryResponse) Response() {}

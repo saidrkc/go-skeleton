@@ -26,11 +26,6 @@ func (p AbsoluteRanking) Handle(query query.Query) (query.QueryResponse, error) 
 	p.Metrics.IncrementResponseStatus(p.Context.Writer.Status())
 
 	params := p.Context.Request.URL.Query()
-	if len(params) < 0 {
-		p.Context.AbortWithStatus(http.StatusBadRequest)
-		return NewAbsoluteRankingQueryResponse([]domain.UserScoreResponse{}), errors.New("Bad request, params are empty (add top)")
-	}
-
 	if top := params.Get("top"); top == "" {
 		p.Context.AbortWithStatus(http.StatusBadRequest)
 		return NewAbsoluteRankingQueryResponse([]domain.UserScoreResponse{}), errors.New("Bad request, param top is mandatory")

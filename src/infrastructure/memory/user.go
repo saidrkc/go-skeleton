@@ -84,7 +84,7 @@ func (u *UserRepository) FindUserScore(score domain.UserScore) (*UserScoreInMemo
 func (u *UserRepository) AbsoluteRanking(ranking int) []domain.UserScoreResponse {
 	usersScore := make([]domain.UserScoreResponse, 0)
 	sort.Slice(u.UsersScore, func(i, j int) bool {
-		return u.UsersScore[i].Total > u.UsersScore[i].Total
+		return u.UsersScore[i].Total > u.UsersScore[j].Total
 	})
 
 	for k, v := range u.UsersScore {

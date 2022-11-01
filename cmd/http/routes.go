@@ -11,12 +11,14 @@ import (
 	"go-skeleton/src/infrastructure/bus/command"
 	"go-skeleton/src/infrastructure/bus/query"
 	"go-skeleton/src/infrastructure/http/get"
+	user3 "go-skeleton/src/infrastructure/http/get/user"
 	"go-skeleton/src/infrastructure/http/post"
 	user2 "go-skeleton/src/infrastructure/http/post/user"
 	"go-skeleton/src/infrastructure/memory"
 )
 
 const DEFAULT_ABSOLUTE_SCORE = "/score"
+const DEFAULT_ABSOLUTE_RANKING = "/ranking"
 const DEFAULT_PING_URL = "/ping"
 const DEFAULT_PONG_URL = "/pong"
 const DEFAULT_PROMETHEUS_METRICS = "/metrics"
@@ -31,6 +33,9 @@ type Routes struct {
 
 func (g *Routes) BindRoutes() {
 	g.Gin.POST(DEFAULT_ABSOLUTE_SCORE, g.buildAbsoluteScoreHandlersMapping)
+	g.Gin.GET(DEFAULT_ABSOLUTE_RANKING, g.buildAbsoluteRankingHandlersMapping)
+
+	// Basic testing endpoints
 	g.Gin.POST(DEFAULT_PONG_URL, g.buildPongHandlersMapping)
 	g.Gin.GET(DEFAULT_PING_URL, g.buildPingHandlersMapping)
 	g.Gin.GET(DEFAULT_PROMETHEUS_METRICS, prometheusHandler())
@@ -58,6 +63,14 @@ func (g *Routes) buildAbsoluteScoreHandlersMapping(c *gin.Context) {
 	cbManager.RegisterHandler(user.AbsoluteScoreCommand{}, absoluteScoreHandler)
 	absoluteController := user2.NewAbsoluteScoreHandler(g.Metrics)
 	absoluteController.AbsoluteScore(c, cbManager)
+}
+
+func (g *Routes) buildAbsoluteRankingHandlersMapping(c *gin.Context) {
+	absoluteRankingQueryHandler := user.NewAbsoluteRanking(c, g.Metrics, UserRepository())
+	qbManager := query.NewQueryBus()
+	qbManager.RegisterHandler(user.AbsoluteRankingQuery{}, absoluteRankingQueryHandler)
+	absoluteRankingController := user3.NewAbsoluteRankingHandler(g.Metrics)
+	absoluteRankingController.AbsoluteRanking(c, qbManager)
 }
 
 func prometheusHandler() gin.HandlerFunc {

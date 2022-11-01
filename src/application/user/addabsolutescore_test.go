@@ -74,7 +74,7 @@ func TestAbsoluteScore_Handle(t *testing.T) {
 		r.Equal(err, errors.New("if wants to change total with score, total must be 0 and vice-versa"))
 	})
 
-	t.Run("Add absolute score to User Fine Request", func(t *testing.T) {
+	t.Run("Add absolute score to User good Request", func(t *testing.T) {
 		r := require.New(t)
 		ctrl := gomock.NewController(t)
 		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())

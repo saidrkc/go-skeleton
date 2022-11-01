@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"sort"
 	"sync"
 
 	"go-skeleton/src/domain"
@@ -80,11 +81,23 @@ func (u *UserRepository) FindUserScore(score domain.UserScore) (*UserScoreInMemo
 	return &UserScoreInMemory{}, -1
 }
 
-func (u *UserRepository) FillUserScore(numberOfUsers int) {
-	var i int
-	for i = 0; i < numberOfUsers; i++ {
-		u.AddScoreToUsersInMemory(UserScoreRandom(i))
+func (u *UserRepository) AbsoluteRanking(ranking int) []domain.UserScoreResponse {
+	usersScore := make([]domain.UserScoreResponse, 0)
+	sort.Slice(u.UsersScore, func(i, j int) bool {
+		return u.UsersScore[i].Total > u.UsersScore[i].Total
+	})
+
+	for k, v := range u.UsersScore {
+		if k == ranking {
+			return usersScore
+		}
+		usersScore = append(usersScore, domain.UserScoreResponse{
+			UserId: v.UserId,
+			Total:  v.Total,
+		})
 	}
+
+	return usersScore
 }
 
 func NewUserRepository() UserRepository {

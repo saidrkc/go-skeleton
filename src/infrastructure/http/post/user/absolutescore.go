@@ -1,6 +1,8 @@
 package user
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"go-skeleton/infrastructure/metrics"
@@ -14,7 +16,11 @@ type AbsoluteScoreHandler struct {
 
 func (h AbsoluteScoreHandler) AbsoluteScore(c *gin.Context, commandbus command.CommandBus) {
 	absoluteScoreCommand := user.NewAbsoluteScoreCommand(c, h.metrics)
-	commandbus.Exec(absoluteScoreCommand)
+	err := commandbus.Exec(absoluteScoreCommand)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
 	c.JSON(200, "{}")
 }
 

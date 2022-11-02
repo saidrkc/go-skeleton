@@ -20,6 +20,7 @@ import (
 const DEFAULT_RELATIVE_RANKING = "/relative"
 const DEFAULT_ABSOLUTE_SCORE = "/score"
 const DEFAULT_ABSOLUTE_RANKING = "/ranking"
+
 const DEFAULT_PING_URL = "/ping"
 const DEFAULT_PONG_URL = "/pong"
 const DEFAULT_PROMETHEUS_METRICS = "/metrics"

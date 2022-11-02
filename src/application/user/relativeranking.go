@@ -40,9 +40,13 @@ func (p RelativeRanking) Handle(query query.Query) (query.QueryResponse, error) 
 	pt, _ := strconv.Atoi(point)
 	around := params.Get("around")
 	ar, _ := strconv.Atoi(around)
-	usersScore := p.UserScore.RelativeRanking(pt, ar)
+	usersScore, err := p.UserScore.RelativeRanking(pt, ar)
 
-	return NewAbsoluteRankingQueryResponse(usersScore), nil
+	if err != nil {
+		return NewRelativeRankingQueryResponse([]domain.UserScoreResponse{}), err
+	}
+
+	return NewRelativeRankingQueryResponse(usersScore), nil
 }
 
 func NewRelativeRanking(context *gin.Context, metrics metrics.MetricsInterface, userScore domain.UserRepositoryInterface) RelativeRanking {

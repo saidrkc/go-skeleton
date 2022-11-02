@@ -2,7 +2,6 @@ package user
 
 import (
 	"errors"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +26,6 @@ func (p AbsoluteRanking) Handle(query query.Query) (query.QueryResponse, error) 
 
 	params := p.Context.Request.URL.Query()
 	if top := params.Get("top"); top == "" {
-		p.Context.AbortWithStatus(http.StatusBadRequest)
 		return NewAbsoluteRankingQueryResponse([]domain.UserScoreResponse{}), errors.New("Bad request, param top is mandatory")
 	}
 

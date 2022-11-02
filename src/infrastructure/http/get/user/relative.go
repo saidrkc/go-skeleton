@@ -1,6 +1,8 @@
 package user
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"go-skeleton/infrastructure/metrics"
@@ -14,7 +16,12 @@ type RelativeRankingHandler struct {
 
 func (h RelativeRankingHandler) RelativeRanking(c *gin.Context, queryBus query.QueryBus) {
 	relativeRatingQuery := user.NewRelativeRankingQuery(c, h.metrics)
-	rsp, _ := queryBus.Exec(relativeRatingQuery)
+	rsp, err := queryBus.Exec(relativeRatingQuery)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
 	c.JSON(200, rsp)
 }
 

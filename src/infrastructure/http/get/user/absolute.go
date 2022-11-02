@@ -1,6 +1,8 @@
 package user
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"go-skeleton/infrastructure/metrics"
@@ -14,7 +16,11 @@ type AbsoluteRankingHandler struct {
 
 func (h AbsoluteRankingHandler) AbsoluteRanking(c *gin.Context, queryBus query.QueryBus) {
 	absoluteRankingQuery := user.NewAbsoluteRankingQuery(c, h.metrics)
-	rsp, _ := queryBus.Exec(absoluteRankingQuery)
+	rsp, err := queryBus.Exec(absoluteRankingQuery)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
 	c.JSON(200, rsp)
 }
 

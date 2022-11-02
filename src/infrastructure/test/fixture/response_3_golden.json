@@ -1,0 +1,16 @@
+{
+  "user_score_response": [
+    {
+      "user": 4,
+      "total": 4
+    },
+    {
+      "user": 3,
+      "total": 3
+    },
+    {
+      "user": 2,
+      "total": 2
+    }
+  ]
+}

@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package memory
 
 import (
@@ -109,8 +112,8 @@ func TestUserRepository_AbsoluteRanking(t *testing.T) {
 }
 
 func TestUserRepository_RelativeRanking(t *testing.T) {
-	userRepository := NewUserRepository()
 	t.Run("Should return relative ranking sorted by totals around position 100/3", func(t *testing.T) {
+		userRepository := NewUserRepository()
 		req := require.New(t)
 		usersScore := providerUsersScoreRelative()
 		for _, v := range usersScore {
@@ -123,6 +126,7 @@ func TestUserRepository_RelativeRanking(t *testing.T) {
 		req.Equal(sortedUserScore, expectedUserRelativeRanking)
 	})
 	t.Run("Should return relative ranking sorted by totals around position 106/3 (only returning pos 106 and 3 before)", func(t *testing.T) {
+		userRepository := NewUserRepository()
 		req := require.New(t)
 		usersScore := providerUsersScoreRelative()
 		for _, v := range usersScore {
@@ -135,6 +139,7 @@ func TestUserRepository_RelativeRanking(t *testing.T) {
 		req.Equal(sortedUserScore, expectedUserRelativeRankingLimitAtTheTop)
 	})
 	t.Run("Should return relative ranking sorted by totals around position 1/3 (only returning pos 1 and 3 after)", func(t *testing.T) {
+		userRepository := NewUserRepository()
 		req := require.New(t)
 		usersScore := providerUsersScoreRelative()
 		for _, v := range usersScore {

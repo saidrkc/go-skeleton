@@ -17,7 +17,7 @@ import (
 	"go-skeleton/src/domain"
 )
 
-func TestAbsoluteRanking_Handle(t *testing.T) {
+func TestRelativeRanking_Handle(t *testing.T) {
 	var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "http_response_time_seconds",
 		Help: "Duration of HTTP requests.",
@@ -37,56 +37,80 @@ func TestAbsoluteRanking_Handle(t *testing.T) {
 		[]string{"status"},
 	)
 	mtrcs := metrics.NewMetrics(httpDuration, totalRequests, responseStatus)
-	t.Run("Trying to get users scoring absolute but params wrong", func(t *testing.T) {
+	t.Run("Trying to get users relative scoring but params wrong", func(t *testing.T) {
 		r := require.New(t)
 		ctrl := gomock.NewController(t)
 		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
-		uri, _ := url.Parse("")
+		uri, _ := url.Parse("?around=2")
 		ctx.Request = &http.Request{
 			Method: "/test",
 			URL:    uri,
 		}
 		userRepository := domain.NewMockUserRepositoryInterface(ctrl)
-		absoluteRankingQuery := user.NewAbsoluteRankingQuery(ctx, mtrcs)
-		absoluteRanking := user.NewAbsoluteRanking(ctx, mtrcs, userRepository)
-		_, err := absoluteRanking.Handle(absoluteRankingQuery)
+		relativeRankingQuery := user.NewRelativeRankingQuery(ctx, mtrcs)
+		relativeRanking := user.NewRelativeRanking(ctx, mtrcs, userRepository)
+		_, err := relativeRanking.Handle(relativeRankingQuery)
 		r.Error(err)
-		r.Equal(err, errors.New("Bad request, param top is mandatory"))
+		r.Equal(err, errors.New("Bad request, param point is mandatory"))
+	})
+	t.Run("Trying to get users relative scoring but params wrong", func(t *testing.T) {
+		r := require.New(t)
+		ctrl := gomock.NewController(t)
+		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+		uri, _ := url.Parse("?point=2")
+		ctx.Request = &http.Request{
+			Method: "/test",
+			URL:    uri,
+		}
+		userRepository := domain.NewMockUserRepositoryInterface(ctrl)
+		relativeRankingQuery := user.NewRelativeRankingQuery(ctx, mtrcs)
+		relativeRanking := user.NewRelativeRanking(ctx, mtrcs, userRepository)
+		_, err := relativeRanking.Handle(relativeRankingQuery)
+		r.Error(err)
+		r.Equal(err, errors.New("Bad request, param around is mandatory"))
 	})
 
-	t.Run("Retrieve ordered by totals with the top variable", func(t *testing.T) {
+	t.Run("Retrieve relative scoring by point and around parameters", func(t *testing.T) {
 		expected := []domain.UserScoreResponse{
 			{
 				UserId: 1,
+				Total:  3,
+			},
+			{
+				UserId: 2,
+				Total:  3,
+			},
+			{
+				UserId: 3,
 				Total:  3,
 			},
 		}
 		r := require.New(t)
 		ctrl := gomock.NewController(t)
 		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
-		uri, _ := url.Parse("?top=3")
+		uri, _ := url.Parse("?point=1&around=1")
 		ctx.Request = &http.Request{
 			Method: "/test",
 			URL:    uri,
 		}
 		userRepository := domain.NewMockUserRepositoryInterface(ctrl)
-		absoluteRankingQuery := user.NewAbsoluteRankingQuery(ctx, mtrcs)
-		userRepository.EXPECT().AbsoluteRanking(3).Return(expected)
-		absoluteRanking := user.NewAbsoluteRanking(ctx, mtrcs, userRepository)
-		rsp, err := absoluteRanking.Handle(absoluteRankingQuery)
+		relativeRankingQuery := user.NewRelativeRankingQuery(ctx, mtrcs)
+		userRepository.EXPECT().RelativeRanking(1, 1).Return(expected, nil)
+		relativeRanking := user.NewRelativeRanking(ctx, mtrcs, userRepository)
+		rsp, err := relativeRanking.Handle(relativeRankingQuery)
 		r.NoError(err)
-		transformation := buildAbsoluteUserResponse(expected)
+		transformation := buildRelativeUserResponse(expected)
 		r.Equal(rsp, transformation)
 	})
 }
 
-func buildAbsoluteUserResponse(domainResponse []domain.UserScoreResponse) user.AbsoluteRankingQueryResponse {
+func buildRelativeUserResponse(domainResponse []domain.UserScoreResponse) user.RelativeRankingQueryResponse {
 	userScoreResponse := make([]user.UserScoreResponse, 0)
 	for _, v := range domainResponse {
 		userScoreResponse = append(userScoreResponse, user.UserScoreResponse{User: v.UserId, Total: v.Total})
 	}
 
-	return user.AbsoluteRankingQueryResponse{
+	return user.RelativeRankingQueryResponse{
 		UsersScoreResponse: userScoreResponse,
 	}
 }

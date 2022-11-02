@@ -40,7 +40,7 @@ func (p AbsoluteScore) Handle(command command.Command) error {
 	if expectedRequest.Score != 0 {
 		userScore := domain.UserScore{
 			UserId: expectedRequest.User,
-			Score:  expectedRequest.Score,
+			Score:  int(expectedRequest.Score),
 		}
 
 		p.UserScore.AddRelativeScoreToUser(userScore)

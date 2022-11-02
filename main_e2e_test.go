@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	srv := http2.NewHttpServer()
 	eng := engine.NewEngine(srv, srv.Metrics)
 	eng.BuildEngine()
-	go eng.RunEngine(8080)
+	go eng.RunEngine(8081)
 
 	ctx2, _ := context.WithTimeout(context.Background(), 5*time.Second)
 Loop:
@@ -115,8 +115,8 @@ func Test_AbsoluteScoreEndpoint(t *testing.T) {
 	t.Run("Test absolute score endpoint adding only score to the user (total must be modified)", func(t *testing.T) {
 		r := req.New(t)
 		endpoint := getBaseUrl("score")
-		request1 := `{"user": 1, "score": 1}`
-		request2 := `{"user": 1, "score": -1}`
+		request1 := `{"user": 10,"score":1}`
+		request2 := `{"user": 10,"score":-1}`
 
 		resp, err := http.Post(endpoint, "application/json", strings.NewReader(request1))
 		r.NoError(err)
@@ -201,7 +201,7 @@ func Test_RelativeRankingQueryEndpoint(t *testing.T) {
 
 func getBaseUrl(en string) string {
 	const baseUrl = "http://127.0.0.1%s/%s"
-	endpoint := fmt.Sprintf(baseUrl, ":8080", en)
+	endpoint := fmt.Sprintf(baseUrl, ":8081", en)
 
 	if v, e := os.LookupEnv("SERVER_LISTEN_ADDR"); e {
 		endpoint = fmt.Sprintf(baseUrl, v, en)

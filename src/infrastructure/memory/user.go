@@ -116,11 +116,12 @@ func (u *UserRepository) RelativeRanking(point int, around int) ([]domain.UserSc
 	}
 
 	end := point + around
-	if end > len(u.UsersScore) {
+	if end >= len(u.UsersScore) {
 		end = len(u.UsersScore) - 1
 	}
 
-	score := u.UsersScore[offset : end+1]
+	score := u.UsersScore[offset:end]
+	score = append(score, u.UsersScore[end])
 
 	for _, v := range score {
 		usersScore = append(usersScore, domain.UserScoreResponse{

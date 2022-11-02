@@ -37,6 +37,28 @@ GET http://127.0.0.1:8080/ping
 POST http://127.0.0.1:8080/pong
 ````
 
+### Test Scoring
+Add absolute score (Post)
+```
+curl --location --request POST '127.0.0.1:8080/score' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "user": 102,
+    "total": 0,
+    "score": 22
+}'
+```
+Request for absolute score
+```
+curl --location --request GET '127.0.0.1:8080/ranking?top=100'
+```
+
+Request for relative score
+
+```
+curl --location --request GET '127.0.0.1:8080/relative?point=2&around=1'
+```
+
 ### Observability Dashboard
 ```bash
 http://127.0.0.1:9090 - Prometheus
@@ -46,12 +68,6 @@ http://127.0.0.1:3000 - Grafana dashboards
 <a href="http://127.0.0.1:3000/d/1JNOL0aGz/golang-http?orgId=1" target="_blank">Grafana Dashboard</a>
 ![Basic Dashboard](infrastructure/metrics/dashboard.png)
 
-## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Please make sure to update tests as appropriate.
-
-## License
-[MIT](https://mit.com/licenses/mit/)
 
 

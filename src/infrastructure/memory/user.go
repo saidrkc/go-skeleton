@@ -100,46 +100,36 @@ func (u *UserRepository) AbsoluteRanking(ranking int) []domain.UserScoreResponse
 	return usersScore
 }
 
-func (u *UserRepository) RelativeRanking(point int, around int) []domain.UserScoreResponse {
+func (u *UserRepository) RelativeRanking(point int, around int) ([]domain.UserScoreResponse, error) {
 	if len(u.UsersScore) == 0 {
-		return []domain.UserScoreResponse{}
+		return []domain.UserScoreResponse{}, nil
 	}
 
 	usersScore := make([]domain.UserScoreResponse, 0)
 	sort.Slice(u.UsersScore, func(i, j int) bool {
 		return u.UsersScore[i].Total > u.UsersScore[j].Total
 	})
-
+	point = point - 1
 	offset := point - around
-	final := point + around
-
-	if final > len(u.UsersScore) {
-		final = len(u.UsersScore)
-	}
-
-	if offset < 0 {
+	if offset <= 0 {
 		offset = 0
 	}
 
-	for _, v := range u.UsersScore[offset : point-1] {
-		usersScore = append(usersScore, domain.UserScoreResponse{
-			UserId: v.UserId,
-			Total:  v.Total,
-		})
+	end := point + around
+	if end > len(u.UsersScore) {
+		end = len(u.UsersScore) - 1
 	}
-	usersScore = append(usersScore, domain.UserScoreResponse{
-		UserId: u.UsersScore[point].UserId,
-		Total:  u.UsersScore[point].Total,
-	})
 
-	for _, v := range u.UsersScore[point+1 : final] {
+	score := u.UsersScore[offset : end+1]
+
+	for _, v := range score {
 		usersScore = append(usersScore, domain.UserScoreResponse{
 			UserId: v.UserId,
 			Total:  v.Total,
 		})
 	}
 
-	return usersScore
+	return usersScore, nil
 }
 
 func NewUserRepository() UserRepository {

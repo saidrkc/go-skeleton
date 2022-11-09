@@ -4,7 +4,6 @@ import "fmt"
 
 type Query interface {
 	QueryID() string
-	PingQuery()
 }
 
 type QueryHandler interface {
